@@ -11,6 +11,7 @@ import com.fortagym.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,15 +41,15 @@ public class CarritoController {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
-    // ✅ Obtener MI carrito
+    // ✅ Obtener MI carrito (Solo lectura)
     @GetMapping
     public List<Carrito> obtenerMiCarrito() {
         Usuario usuario = getUsuarioLogueado();
         return carritoRepo.findByUsuarioId(usuario.getId());
     }
 
-    // ✅ Agregar producto al carrito
-    // Si ya existe, suma cantidad
+    // ✅ Agregar producto al carrito (Operación de escritura)
+    @Transactional
     @PostMapping("/add/{productoId}/{cantidad}")
     public ResponseEntity<?> agregarAlCarrito(
             @PathVariable Long productoId,
@@ -81,9 +82,7 @@ public class CarritoController {
         Carrito carrito;
 
         if (carritoExistente.isPresent()) {
-
             carrito = carritoExistente.get();
-
             int nuevaCantidad = carrito.getCantidad() + cantidad;
 
             if (nuevaCantidad > producto.getStock()) {
@@ -92,9 +91,7 @@ public class CarritoController {
             }
 
             carrito.setCantidad(nuevaCantidad);
-
         } else {
-
             carrito = new Carrito();
             carrito.setId(carritoId);
             carrito.setUsuario(usuario);
@@ -107,7 +104,8 @@ public class CarritoController {
         return ResponseEntity.ok("Producto agregado al carrito");
     }
 
-    // ✅ Eliminar un producto específico
+    // ✅ Eliminar un producto específico (Operación de escritura)
+    @Transactional
     @DeleteMapping("/eliminar/{productoId}")
     public ResponseEntity<?> eliminarDelCarrito(@PathVariable Long productoId) {
 
@@ -120,7 +118,8 @@ public class CarritoController {
         return ResponseEntity.ok("Producto eliminado");
     }
 
-    // ✅ Limpiar carrito completo
+    // ✅ Limpiar carrito completo (Operación de escritura)
+    @Transactional
     @DeleteMapping("/limpiar")
     public ResponseEntity<?> limpiarMiCarrito() {
 
