@@ -54,7 +54,7 @@ class NutricionControllerIntegrationTest {
 
     @Test
     void nuevaNutricion_guardar_y_ver() throws Exception {
-        Usuario u = new Usuario("Number1","Ultimo","nutri@test.com","123456", Rol.USUARIO, null);
+        Usuario u = new Usuario("Number1","Ultimo", "55555555", "nutri@test.com","123456", Rol.USUARIO, null);
         usuarioRepository.save(u);
 
         mockMvc.perform(get("/nutricion/nuevo/{idUsuario}", u.getId()))

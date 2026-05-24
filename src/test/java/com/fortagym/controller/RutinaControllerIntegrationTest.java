@@ -59,7 +59,7 @@ class RutinaControllerIntegrationTest {
 
     @Test
     void guardarRutina_crea_rutina_y_detalles() throws Exception {
-        Usuario u = new Usuario("Rut","Ulisa","rut@test.com","123456", Rol.USUARIO, null);
+        Usuario u = new Usuario("Rut","Ulisa", "66666666", "rut@test.com","123456", Rol.USUARIO, null);
         usuarioRepository.save(u);
 
         mockMvc.perform(post("/rutina/guardar")
@@ -86,7 +86,7 @@ class RutinaControllerIntegrationTest {
     @Test
     @WithMockUser(username = "test@test.com", roles = {"USER"})
     void editarRutina_get_devuelve_rutina_existente() throws Exception {
-        Usuario u = new Usuario("Esteban","Dario","edit@test.com","123456", Rol.USUARIO, null);
+        Usuario u = new Usuario("Esteban","Dario", "77777777", "edit@test.com","123456", Rol.USUARIO, null);
         usuarioRepository.save(u);
 
         Rutina r = new Rutina("obs","T", u);

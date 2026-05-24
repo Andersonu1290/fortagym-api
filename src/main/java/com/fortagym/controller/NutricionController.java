@@ -7,7 +7,7 @@ import com.fortagym.service.UsuarioService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*; // 👈 Aquí viene el CrossOrigin
+import org.springframework.web.bind.annotation.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.Optional;
 
 // 🔥 EL PASE VIP: Esto aniquila el error 403 de CORS a nivel de controlador
-@CrossOrigin(origins = "http://localhost:4200") 
 @RestController 
 @RequestMapping("/api/nutricion") 
 public class NutricionController {

@@ -4,8 +4,18 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 
 @Entity
 @Table(name = "pago")
@@ -17,13 +27,13 @@ public class Pago {
 
     @NotBlank(message = "El método de pago es obligatorio")
     @Pattern(regexp = "tarjeta|presencial", flags = Pattern.Flag.CASE_INSENSITIVE, message = "El método de pago debe ser 'tarjeta' o 'presencial'")
-    @Column(length = 20, nullable = false)
+    @Column(name = "metodo_pago", length = 20, nullable = false)
     private String metodoPago;
 
-    @NotBlank(message = "El DNI es obligatorio")
-    @Pattern(regexp = "\\d{8}", message = "El DNI debe tener exactamente 8 dígitos")
-    @Column(length = 8, nullable = false)
-    private String dni;
+    // 🚀 CAMBIO APLICADO: Reemplazo de DNI por numeroOperacion
+    @NotBlank(message = "El número de operación o comprobante es obligatorio")
+    @Column(name = "numero_operacion", length = 50, nullable = false)
+    private String numeroOperacion;
 
     @NotNull(message = "El monto no puede estar vacío")
     @Positive(message = "El monto debe ser mayor a 0")
@@ -35,7 +45,6 @@ public class Pago {
 
     @NotBlank(message = "El estado del pago es obligatorio")
     @Pattern(regexp = "pendiente|verificado|pagado", flags = Pattern.Flag.CASE_INSENSITIVE, message = "El estado debe ser pendiente, verificado o pagado")
-
     @Column(length = 20, nullable = false)
     private String estado;
 
@@ -69,12 +78,13 @@ public class Pago {
         this.metodoPago = metodoPago;
     }
 
-    public String getDni() {
-        return dni;
+    // 🚀 CAMBIO APLICADO: Nuevos Getters y Setters
+    public String getNumeroOperacion() {
+        return numeroOperacion;
     }
 
-    public void setDni(String dni) {
-        this.dni = dni;
+    public void setNumeroOperacion(String numeroOperacion) {
+        this.numeroOperacion = numeroOperacion;
     }
 
     public Double getMonto() {
@@ -116,5 +126,4 @@ public class Pago {
     public void setMembresia(Membresia membresia) {
         this.membresia = membresia;
     }
-
 }

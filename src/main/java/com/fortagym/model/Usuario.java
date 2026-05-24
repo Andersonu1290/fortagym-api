@@ -1,11 +1,20 @@
 package com.fortagym.model;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.NotNull;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
-
-import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "usuarios")
@@ -22,6 +31,10 @@ public class Usuario {
     @NotBlank(message = "El apellido no puede estar vacío")
     @Size(max = 50)
     private String apellido;
+
+    // 🚀 NUEVO: Campo DNI normalizado a la tabla de Usuario
+    @Column(unique = true, length = 15)
+    private String dni;
 
     @Email
     @NotBlank
@@ -44,9 +57,10 @@ public class Usuario {
 
     public Usuario() {}
 
-    public Usuario(String nombre, String apellido, String email, String password, Rol rol, byte[] fotoPerfil) {
+    public Usuario(String nombre, String apellido, String dni, String email, String password, Rol rol, byte[] fotoPerfil) {
         this.nombre = nombre;
         this.apellido = apellido;
+        this.dni = dni;
         this.email = email;
         this.password = password;
         this.rol = rol;
@@ -54,7 +68,6 @@ public class Usuario {
     }
 
     // Getters y Setters
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -63,6 +76,10 @@ public class Usuario {
 
     public String getApellido() { return apellido; }
     public void setApellido(String apellido) { this.apellido = apellido; }
+
+    // 🚀 NUEVO: Getter y Setter para el DNI
+    public String getDni() { return dni; }
+    public void setDni(String dni) { this.dni = dni; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

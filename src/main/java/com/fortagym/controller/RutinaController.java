@@ -20,7 +20,6 @@ import java.util.*;
 
 @RestController 
 @RequestMapping("/api/rutinas")
-@CrossOrigin(origins = "http://localhost:4200") // 🔥 Evita bloqueos de Angular
 public class RutinaController {
 
     private static final Logger logger = LoggerFactory.getLogger(RutinaController.class);
@@ -48,6 +47,7 @@ public class RutinaController {
             map.put("id", u.getId());
             map.put("nombre", u.getNombre() + " " + u.getApellido());
             map.put("email", u.getEmail());
+            map.put("dni", u.getDni()); // 🚀 ¡ESTA ES LA LÍNEA QUE LO ARREGLA TODO!
             map.put("tieneNutricion", nutricionRepository.existsByUsuarioId(u.getId()));
             map.put("tieneRutina", rutinaService.buscarPorUsuario(u).isPresent());
             response.add(map);

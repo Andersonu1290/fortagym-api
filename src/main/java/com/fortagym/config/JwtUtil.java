@@ -1,10 +1,10 @@
 package com.fortagym.config;
 
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value; // 🚀 Importante
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -17,9 +17,14 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    // 🔑 Llave secreta para firmar los tokens (En un entorno real se pone en el application.properties)
-    private static final String SECRET_KEY_STRING = "WansdSystem_Super_Secret_Key_FortaGym_2026_Extremadamente_Larga";
-    private final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes());
+    // 🚀 Inyectamos la llave secreta desde los application.properties
+    @Value("${jwt.secret}")
+    private String secretKeyString;
+
+    // Método seguro para obtener y transformar la llave
+    private Key getSigningKey() {
+        return Keys.hmacShaKeyFor(secretKeyString.getBytes());
+    }
 
     // 1️⃣ Generar un token nuevo para el usuario
     public String generateToken(UserDetails userDetails) {
@@ -47,7 +52,8 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder().setSigningKey(SECRET_KEY).build().parseClaimsJws(token).getBody();
+        // 🚀 Usamos getSigningKey() en lugar de la variable estática
+        return Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token).getBody();
     }
 
     private Boolean isTokenExpired(String token) {
@@ -64,7 +70,8 @@ public class JwtUtil {
                 .setSubject(subject) // Aquí guardamos el email del usuario
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // Caduca en 10 horas
-                .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
+                // 🚀 Usamos getSigningKey()
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256) 
                 .compact();
     }
 }

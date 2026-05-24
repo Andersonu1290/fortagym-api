@@ -1,18 +1,25 @@
 package com.fortagym.config;
 
-import com.fortagym.service.ConsejoService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import java.util.Collections;
 
-@ControllerAdvice
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.fortagym.service.EmailAlreadyExistsException;
+
+@RestControllerAdvice
 public class GlobalAdvice {
 
-    @Autowired
-    private ConsejoService consejoService;
-
-    @ModelAttribute("consejoAleatorio")
-    public String consejoAleatorio() {
-        return consejoService.obtenerConsejo();
+    // 🛡️ Atrapa el error cuando un usuario intenta registrar un correo que ya existe
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<?> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Collections.singletonMap("error", ex.getMessage()));
     }
+
+    // Aquí en el futuro puedes agregar más @ExceptionHandler para otros errores
+    // (Por ejemplo, si un usuario no existe, si el token expiró, etc.)
 }

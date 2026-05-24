@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/api/admin") // ⬅️ CAMBIADO: Ahora coincide con tu ruta de Angular
 public class AdminController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
@@ -69,11 +69,4 @@ public class AdminController {
         usuarioRepository.deleteById(id);
         return ResponseEntity.ok(new MensajeResponse("Usuario eliminado exitosamente"));
     }
-}
-
-// Clase de apoyo para enviar mensajes JSON bonitos
-class MensajeResponse {
-    private String mensaje;
-    public MensajeResponse(String mensaje) { this.mensaje = mensaje; }
-    public String getMensaje() { return mensaje; }
 }

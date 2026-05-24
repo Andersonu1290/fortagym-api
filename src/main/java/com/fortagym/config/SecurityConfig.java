@@ -1,6 +1,9 @@
 package com.fortagym.config;
 
-import com.fortagym.service.CustomUserDetailsService;
+import java.util.Arrays;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -17,9 +20,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Arrays;
+import com.fortagym.service.CustomUserDetailsService;
 
 @Configuration
 @EnableWebSecurity
@@ -28,6 +30,10 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtRequestFilter jwtRequestFilter;
+
+    // Lee de application.properties o usa el default
+    @Value("${allowed.origins:http://localhost:4200}")
+    private String allowedOrigins;
 
     @Autowired
     public SecurityConfig(CustomUserDetailsService userDetailsService, JwtRequestFilter jwtRequestFilter) {
@@ -59,22 +65,24 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // 🚀 Permite a Angular hacer la pregunta previa antes de guardar
+                // 🚀 Permite pre-flight requests de CORS
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
 
-                .requestMatchers(HttpMethod.POST, "/api/rutinas/guardar").hasAnyRole("ADMIN", "ENTRENADOR")
+                // 🛡️ RUTAS PROTEGIDAS CON AUTORIDAD
+                .requestMatchers(HttpMethod.POST, "/api/rutinas/guardar").hasAnyAuthority("ADMIN", "ENTRENADOR")
+                .requestMatchers(HttpMethod.POST, "/api/productos/guardar").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/eliminar/**").hasAuthority("ADMIN")
+                
+                // 🚀 Regla para Gestión de Usuarios (AdminController)
+                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 
                 .requestMatchers("/api/calendario/**").authenticated()
 
-                // 🔓 RUTAS PÚBLICAS
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/auth/**", "/api/admin/promociones", "/api/usuarios/foto/**", "/uploads/**", "/css/**", "/js/**", "/img/**", "/registro").permitAll()
-                .requestMatchers("/api/usuarios/registro").permitAll()
-                .requestMatchers("/api/usuarios/foto/**").permitAll()
-                .requestMatchers("/uploads/**", "/css/**", "/js/**", "/img/**").permitAll()
-                .requestMatchers("/registro").permitAll()
+                // 🛒 RUTAS PÚBLICAS
+                .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
+                .requestMatchers("/api/auth/**", "/api/admin/promociones", "/api/usuarios/foto/**", "/uploads/**", "/css/**", "/js/**", "/img/**", "/registro", "/api/usuarios/registro").permitAll()
 
-                // 🛡️ TU LÓGICA QUE SÍ FUNCIONA PARA CARGAR LOS DATOS
+                // 🛡️ Resto
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
@@ -86,16 +94,18 @@ public class SecurityConfig {
     }
 
     @Bean
-public CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration configuration = new CorsConfiguration();
-    // 🌟 Por ahora permitimos todo para que no te trabes en el despliegue
-    configuration.setAllowedOriginPatterns(Arrays.asList("*")); 
-    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
-    configuration.setAllowCredentials(true);
-    
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", configuration);
-    return source;
-}
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        
+        // Lee los orígenes dinámicamente según el entorno
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept")); 
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }

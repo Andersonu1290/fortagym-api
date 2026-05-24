@@ -40,7 +40,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(jwt); // Sacamos el correo del usuario
             } catch (Exception e) {
-                System.out.println("Token inválido o expirado");
+                // 🔥 CORRECCIÓN: Si el token está corrupto, limpiamos el contexto
+                SecurityContextHolder.clearContext();
+                logger.error("Token inválido o expirado");
             }
         }
 
@@ -60,6 +62,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                // 🔥 CORRECCIÓN: Si la validación falla, limpiamos el contexto
+                SecurityContextHolder.clearContext();
             }
         }
         

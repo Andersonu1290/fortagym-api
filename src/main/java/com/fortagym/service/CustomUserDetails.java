@@ -1,8 +1,8 @@
 package com.fortagym.service;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import com.fortagym.model.Usuario;
 
 import java.util.Collection;
@@ -11,13 +11,12 @@ import java.util.Collections;
 public class CustomUserDetails implements UserDetails {
     private final Usuario usuario;
 
-    public Long getId() {
-    return usuario.getId(); // Asumiendo que internamente usas un objeto Usuario
-    }
-
-
     public CustomUserDetails(Usuario usuario) {
         this.usuario = usuario;
+    }
+
+    public Long getId() {
+        return usuario.getId();
     }
 
     public String getNombre() {
@@ -31,19 +30,22 @@ public class CustomUserDetails implements UserDetails {
     public String getNombreCompleto() {
         return usuario.getNombre() + " " + usuario.getApellido();
     }
+
     public Usuario getUsuario() {
-    return usuario;
+        return usuario;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-    if (usuario.getRol() == null) {
-        return Collections.emptyList();
+        if (usuario.getRol() == null) {
+            return Collections.emptyList();
+        }
+        String rolActual = usuario.getRol().name();
+        // 🔥 ESTO ES LO QUE VERÁS EN LA CONSOLA DE JAVA (IntelliJ/Eclipse)
+        System.out.println("DEBUG: El usuario tiene el rol: '" + rolActual + "'");
+        
+        return Collections.singletonList(new SimpleGrantedAuthority(rolActual));
     }
-    return Collections.singletonList(() -> "ROLE_" + usuario.getRol().name());
-    }
-
-
     @Override
     public String getPassword() {
         return usuario.getPassword();
@@ -53,9 +55,9 @@ public class CustomUserDetails implements UserDetails {
     public String getUsername() {
         return usuario.getEmail();
     }
+
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
     @Override public boolean isEnabled() { return true; }
-
 }

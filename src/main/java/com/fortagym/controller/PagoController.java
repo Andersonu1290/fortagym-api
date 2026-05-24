@@ -17,8 +17,8 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController // ⬅️ Convertido a API REST
-@RequestMapping("/api/pagos") // ⬅️ Nueva ruta base
+@RestController 
+@RequestMapping("/api/pagos") 
 public class PagoController {
 
     private static final Logger logger = LoggerFactory.getLogger(PagoController.class);
@@ -32,8 +32,8 @@ public class PagoController {
     @PostMapping("/confirmar")
     public ResponseEntity<?> confirmarPago(@RequestBody PagoRequest request, Principal principal) {
         
-        logger.info("💳 Iniciando proceso de pago. Método: {}, Membresía ID: {}, DNI: {}",
-                request.getMetodoPago(), request.getMembresiaId(), request.getDni());
+        logger.info("💳 Iniciando proceso de pago. Método: {}, Membresía ID: {}, N° Operación: {}",
+                request.getMetodoPago(), request.getMembresiaId(), request.getNumeroOperacion());
 
         // 1. Validar que haya sesión JWT
         if (principal == null) {
@@ -42,9 +42,9 @@ public class PagoController {
 
         Usuario usuario = usuarioRepository.findByEmail(principal.getName());
 
-        // 2. Validar DNI
-        if (request.getDni() == null || !request.getDni().matches("\\d{8}")) {
-            return ResponseEntity.badRequest().body(new MensajeResponse("El DNI debe tener exactamente 8 dígitos numéricos."));
+        // 2. Validar Número de Operación (En lugar de DNI)
+        if (request.getNumeroOperacion() == null || request.getNumeroOperacion().isBlank()) {
+            return ResponseEntity.badRequest().body(new MensajeResponse("El número de operación o comprobante es obligatorio."));
         }
 
         // 3. Validar método de pago
@@ -62,7 +62,7 @@ public class PagoController {
 
         // 5. Registrar el pago
         Pago pago = new Pago();
-        pago.setDni(request.getDni());
+        pago.setNumeroOperacion(request.getNumeroOperacion()); // 🚀 Asignamos el código de la transacción
         pago.setMetodoPago(metodoNormalizado);
         pago.setMembresia(membresia);
         pago.setUsuario(usuario);
@@ -86,16 +86,18 @@ public class PagoController {
     }
 }
 
-// DTO para recibir el JSON desde Angular
+// 🚀 DTO Actualizado para recibir el JSON desde Angular
 class PagoRequest {
-    private String dni;
+    private String numeroOperacion; // ⬅️ Cambiado de 'dni' a 'numeroOperacion'
     private String metodoPago;
     private Long membresiaId;
 
-    public String getDni() { return dni; }
-    public void setDni(String dni) { this.dni = dni; }
+    public String getNumeroOperacion() { return numeroOperacion; }
+    public void setNumeroOperacion(String numeroOperacion) { this.numeroOperacion = numeroOperacion; }
+    
     public String getMetodoPago() { return metodoPago; }
     public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
+    
     public Long getMembresiaId() { return membresiaId; }
     public void setMembresiaId(Long membresiaId) { this.membresiaId = membresiaId; }
 }
