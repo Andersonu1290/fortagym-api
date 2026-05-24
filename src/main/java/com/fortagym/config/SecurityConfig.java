@@ -61,33 +61,61 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                // 🚀 Permite pre-flight requests de CORS
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
 
-                // 🛡️ RUTAS PROTEGIDAS CON AUTORIDAD
-                .requestMatchers(HttpMethod.POST, "/api/rutinas/guardar").hasAnyAuthority("ADMIN", "ENTRENADOR")
-                .requestMatchers(HttpMethod.POST, "/api/productos/guardar").hasAuthority("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/productos/eliminar/**").hasAuthority("ADMIN")
-                
-                // 🚀 Regla para Gestión de Usuarios (AdminController)
-                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                
-                .requestMatchers("/api/calendario/**").authenticated()
+            .authorizeHttpRequests(auth -> auth
+
+                // 🚀 Permite pre-flight requests de CORS
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // 🛒 RUTAS PÚBLICAS
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-                .requestMatchers("/api/auth/**", "/api/admin/promociones", "/api/usuarios/foto/**", "/uploads/**", "/css/**", "/js/**", "/img/**", "/registro", "/api/usuarios/registro").permitAll()
 
-                // 🛡️ Resto
+                // 🔥 PROMOCIONES PÚBLICAS
+                .requestMatchers(HttpMethod.GET, "/api/admin/promociones/**").permitAll()
+
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/api/usuarios/foto/**",
+                    "/uploads/**",
+                    "/css/**",
+                    "/js/**",
+                    "/img/**",
+                    "/registro",
+                    "/api/usuarios/registro"
+                ).permitAll()
+
+                // 🛡️ RUTAS PROTEGIDAS CON AUTORIDAD
+                .requestMatchers(HttpMethod.POST, "/api/rutinas/guardar")
+                    .hasAnyAuthority("ADMIN", "ENTRENADOR")
+
+                .requestMatchers(HttpMethod.POST, "/api/productos/guardar")
+                    .hasAuthority("ADMIN")
+
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/eliminar/**")
+                    .hasAuthority("ADMIN")
+
+                // 🚀 Regla para Gestión de Usuarios (AdminController)
+                .requestMatchers("/api/admin/**")
+                    .hasAuthority("ADMIN")
+
+                .requestMatchers("/api/carrito/**")
+                    .authenticated()
+
+                .requestMatchers("/api/calendario/**")
+                    .authenticated()
+
+                // 🛡️ RESTO
                 .anyRequest().authenticated()
             )
+
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -95,17 +123,33 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         // Lee los orígenes dinámicamente según el entorno
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
-        
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept")); 
+
+        configuration.setAllowedMethods(Arrays.asList(
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "OPTIONS",
+            "PATCH"
+        ));
+
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Accept"
+        ));
+
         configuration.setAllowCredentials(true);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
 }

@@ -54,7 +54,8 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MensajeResponse("No autorizado"));
         }
         
-        Usuario usuario = usuarioRepository.findByEmail(principal.getName());
+        Usuario usuario = usuarioRepository.findByEmail(principal.getName())
+    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         if (usuario == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new MensajeResponse("Usuario no encontrado"));
         }
@@ -68,7 +69,8 @@ public class UsuarioController {
     // =======================
     @PutMapping("/perfil")
     public ResponseEntity<?> actualizarPerfil(@RequestBody Map<String, String> datosActualizados, Principal principal) {
-        Usuario usuario = usuarioRepository.findByEmail(principal.getName());
+        Usuario usuario = usuarioRepository.findByEmail(principal.getName())
+    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         if (datosActualizados.containsKey("nombre")) {
             usuario.setNombre(datosActualizados.get("nombre"));
@@ -94,7 +96,8 @@ public class UsuarioController {
             return ResponseEntity.badRequest().body(new MensajeResponse("Selecciona una imagen válida."));
         }
         try {
-            Usuario usuario = usuarioRepository.findByEmail(principal.getName());
+            Usuario usuario = usuarioRepository.findByEmail(principal.getName())
+    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             usuario.setFotoPerfil(archivo.getBytes());
             usuarioService.guardar(usuario);
             return ResponseEntity.ok(new MensajeResponse("Foto actualizada correctamente."));

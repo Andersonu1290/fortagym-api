@@ -40,7 +40,8 @@ public class PagoController {
             return ResponseEntity.status(401).body(new MensajeResponse("Debes iniciar sesión antes de pagar."));
         }
 
-        Usuario usuario = usuarioRepository.findByEmail(principal.getName());
+        Usuario usuario = usuarioRepository.findByEmail(principal.getName())
+    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         // 2. Validar Número de Operación (En lugar de DNI)
         if (request.getNumeroOperacion() == null || request.getNumeroOperacion().isBlank()) {

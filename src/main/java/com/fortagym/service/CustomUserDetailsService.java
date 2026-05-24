@@ -1,11 +1,12 @@
 package com.fortagym.service;
 
-import com.fortagym.model.Usuario;
-import com.fortagym.repository.UsuarioRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import com.fortagym.model.Usuario;
+import com.fortagym.repository.UsuarioRepository;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -18,7 +19,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByEmail(email);
+        Usuario usuario = usuarioRepository.findByEmail(email)
+    .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         if (usuario == null) {
             throw new UsernameNotFoundException("❌ Usuario no encontrado con el email: " + email);

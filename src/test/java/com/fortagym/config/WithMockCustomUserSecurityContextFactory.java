@@ -1,16 +1,16 @@
 package com.fortagym.config;
 
-import com.fortagym.model.Rol;
-import com.fortagym.model.Usuario;
-import com.fortagym.repository.UsuarioRepository;
-import com.fortagym.service.CustomUserDetails;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
+
+import com.fortagym.model.Rol;
+import com.fortagym.model.Usuario;
+import com.fortagym.repository.UsuarioRepository;
+import com.fortagym.service.CustomUserDetails;
 
 public class WithMockCustomUserSecurityContextFactory
         implements WithSecurityContextFactory<WithMockCustomUser> {
@@ -25,7 +25,8 @@ public class WithMockCustomUserSecurityContextFactory
         String email = annotation.email();
 
         // Buscar usuario o crearlo
-        Usuario usuario = usuarioRepository.findByEmail(email);
+        Usuario usuario = usuarioRepository.findByEmail(email)
+    .orElse(null);
 
         if (usuario == null) {
             usuario = new Usuario();

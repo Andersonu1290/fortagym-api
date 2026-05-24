@@ -1,13 +1,16 @@
 package com.fortagym.service;
 
-import com.fortagym.model.Rol;
-import com.fortagym.model.Usuario;
-import com.fortagym.repository.UsuarioRepository;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.util.List;
+
+import com.fortagym.model.Rol;
+import com.fortagym.model.Usuario;
+import com.fortagym.repository.UsuarioRepository;
 
 @Service
 public class UsuarioService {
@@ -19,7 +22,7 @@ public class UsuarioService {
     private BCryptPasswordEncoder passwordEncoder;
 
     public Usuario registrar(Usuario usuario) {
-        if (usuarioRepository.findByEmail(usuario.getEmail()) != null) {
+        if (usuarioRepository.findByEmail(usuario.getEmail()).isPresent()) {
             throw new EmailAlreadyExistsException("El correo ya está en uso");
         }
 
@@ -34,15 +37,18 @@ public class UsuarioService {
     }
 
     public boolean validarLogin(String email, String password) {
-        Usuario usuario = usuarioRepository.findByEmail(email);
-        if (usuario != null) {
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+
+        if (usuarioOpt.isPresent()) {
+            Usuario usuario = usuarioOpt.get();
             return passwordEncoder.matches(password, usuario.getPassword());
         }
         return false;
     }
 
     public Usuario buscarPorEmail(String email) {
-        return usuarioRepository.findByEmail(email);
+        return usuarioRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
     public void guardar(Usuario usuario) {

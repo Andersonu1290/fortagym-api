@@ -56,7 +56,8 @@ class UsuarioServiceTest {
         u.setEmail("maria@test.com");
         u.setPassword("ENCODED");
 
-        when(usuarioRepository.findByEmail("maria@test.com")).thenReturn((u));
+        when(usuarioRepository.findByEmail("maria@test.com"))
+    .thenReturn(Optional.of(u));
         when(encoder.matches("abcd", "ENCODED")).thenReturn(true);
 
         assertTrue(usuarioService.validarLogin("maria@test.com", "abcd"));
@@ -67,7 +68,8 @@ class UsuarioServiceTest {
         Usuario u = new Usuario();
         u.setNombre("Leo");
 
-        when(usuarioRepository.findByEmail("leo@test.com")).thenReturn((u));
+        when(usuarioRepository.findByEmail("leo@test.com"))
+    .thenReturn(Optional.of(u));
 
         Usuario encontrado = usuarioService.buscarPorEmail("leo@test.com");
 

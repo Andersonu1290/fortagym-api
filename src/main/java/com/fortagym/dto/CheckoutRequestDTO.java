@@ -2,28 +2,31 @@ package com.fortagym.dto;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
 public class CheckoutRequestDTO {
-    // Si tienes autenticación JWT el usuarioId se puede sacar del token.
-    // Si no, lo mandamos desde el frontend temporalmente.
-    private Long usuarioId; 
-    
-    // Datos del formulario de envío
+
+    private Long usuarioId;
+
     private String departamento;
     private String provincia;
     private String distrito;
     private String direccion;
     private String codigoPostal;
     private String referencia;
-    
-    // Métodos elegidos
+
     private String metodoEntrega;
     private String metodoPago;
     private String codigoCupon;
-    
-    // Lista de productos del carrito
-    private List<ItemCarritoDTO> items;
 
-    // --- GETTERS Y SETTERS DE CHECKOUTREQUESTDTO ---
+    // 🔥 VALIDACIÓN
+    @NotEmpty(message = "El carrito no puede estar vacío")
+    private List<@Valid ItemCarritoDTO> items;
+
+    // --- GETTERS Y SETTERS ---
 
     public Long getUsuarioId() {
         return usuarioId;
@@ -113,13 +116,18 @@ public class CheckoutRequestDTO {
         this.items = items;
     }
 
-    // --- CLASE INTERNA ---
+    // =========================
+    // CLASE INTERNA
+    // =========================
 
     public static class ItemCarritoDTO {
-        private Long productoId;
-        private Integer cantidad;
 
-        // --- GETTERS Y SETTERS DE ITEMCARRITODTO ---
+        @NotNull(message = "El ID del producto es obligatorio")
+        private Long productoId;
+
+        @NotNull(message = "La cantidad es obligatoria")
+        @Min(value = 1, message = "La cantidad mínima es 1")
+        private Integer cantidad;
 
         public Long getProductoId() {
             return productoId;

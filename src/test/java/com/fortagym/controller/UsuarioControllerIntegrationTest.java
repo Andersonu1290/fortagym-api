@@ -58,7 +58,8 @@ class UsuarioControllerIntegrationTest {
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/login"));
 
-        Usuario u = usuarioRepository.findByEmail("nuevo@test.com");
+        Usuario u = usuarioRepository.findByEmail("nuevo@test.com")
+    .orElse(null);
         assertThat(u).isNotNull();
         assertThat(passwordEncoder.matches("123456", u.getPassword())).isTrue();
     }
@@ -79,7 +80,8 @@ class UsuarioControllerIntegrationTest {
                     .principal(principal))
             .andExpect(status().is3xxRedirection());
 
-        Usuario saved = usuarioRepository.findByEmail("foto@test.com");
+        Usuario saved = usuarioRepository.findByEmail("foto@test.com")
+    .orElse(null);
         assertThat(saved.getFotoPerfil()).isNotNull();
 
         // obtener foto
@@ -105,7 +107,8 @@ class UsuarioControllerIntegrationTest {
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/usuario"));
 
-        Usuario saved = usuarioRepository.findByEmail("change@test.com");
+        Usuario saved = usuarioRepository.findByEmail("change@test.com")
+    .orElse(null);
         assertThat(saved.getNombre()).isEqualTo("Nuevo");
         assertThat(passwordEncoder.matches("newpass", saved.getPassword())).isTrue();
     }

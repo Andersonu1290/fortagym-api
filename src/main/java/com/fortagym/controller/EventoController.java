@@ -1,16 +1,20 @@
 package com.fortagym.controller;
 
-import com.fortagym.model.Usuario;
-import com.fortagym.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fortagym.model.Usuario;
+import com.fortagym.repository.UsuarioRepository;
 
 @RestController
 @RequestMapping("/api/calendario")
@@ -26,7 +30,8 @@ public class EventoController {
     public ResponseEntity<?> obtenerMisEventos(Principal principal) {
         if (principal == null) return ResponseEntity.status(401).build();
 
-        Usuario usuario = usuarioRepository.findByEmail(principal.getName());
+        Usuario usuario = usuarioRepository.findByEmail(principal.getName())
+    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
         // 🌟 Consulta SQL robusta
         String sql = "SELECT titulo, fecha, tipo FROM eventos_calendario WHERE usuario_id = ?";

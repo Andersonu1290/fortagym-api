@@ -19,11 +19,12 @@ public class Producto {
     @Enumerated(EnumType.STRING)
     @NotNull(message = "La categoría es obligatoria")
     private CategoriaProducto categoria;
-
+    
     @NotNull(message = "El precio es obligatorio")
     @PositiveOrZero(message = "El precio no puede ser negativo")
     private Double precio;
 
+    @Column(nullable = false)
     @NotNull(message = "El stock es obligatorio")
     @PositiveOrZero(message = "El stock no puede ser negativo")
     private Integer stock;

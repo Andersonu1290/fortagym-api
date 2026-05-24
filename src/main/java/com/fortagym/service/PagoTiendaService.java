@@ -12,6 +12,9 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.fortagym.service.CustomUserDetails;
+
 
 @Service
 public class PagoTiendaService {
@@ -25,8 +28,9 @@ public class PagoTiendaService {
     @Transactional 
     public PagoTienda procesarCheckout(CheckoutRequestDTO request) {
         
-        Usuario usuario = usuarioRepo.findById(request.getUsuarioId())
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email = ((CustomUserDetails) principal).getUsername();
+        Usuario usuario = usuarioRepo.findByEmail(email).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         BigDecimal subtotal = BigDecimal.ZERO;
         List<DetallePagoTienda> detalles = new ArrayList<>();
@@ -48,10 +52,16 @@ public class PagoTiendaService {
             det.setSubtotalItem(subItem);
             
             detalles.add(det);
+
+            if (prod.getStock() == null || prod.getStock() < item.getCantidad()) {
+                throw new RuntimeException(
+                    "Stock insuficiente para el producto: " + prod.getNombre()
+                );
+            }
             
             // Aquí iría tu lógica de restar STOCK si tu entidad Producto tiene el campo "stock"
-            // prod.setStock(prod.getStock() - item.getCantidad());
-            // productoRepo.save(prod);
+            prod.setStock(prod.getStock() - item.getCantidad());
+            productoRepo.save(prod);
         }
 
         // 2. Cálculos financieros (Descuento, Envío, IGV)

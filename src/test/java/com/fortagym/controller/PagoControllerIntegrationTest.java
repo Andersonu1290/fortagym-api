@@ -46,7 +46,7 @@ class PagoControllerIntegrationTest {
     @BeforeEach
 void setupUsers() {
 
-    if (usuarioRepository.findByEmail("pagador@test.com") == null) {
+    if (usuarioRepository.findByEmail("pagador@test.com").isEmpty()) {
         Usuario u1 = new Usuario();
         u1.setNombre("Pagador");
         u1.setApellido("Test");
@@ -56,7 +56,7 @@ void setupUsers() {
         usuarioRepository.save(u1);
     }
 
-    if (usuarioRepository.findByEmail("pagador2@test.com") == null) {
+    if (usuarioRepository.findByEmail("pagador2@test.com").isEmpty()) {
         Usuario u2 = new Usuario();
         u2.setNombre("Pagador2");
         u2.setApellido("Test");
