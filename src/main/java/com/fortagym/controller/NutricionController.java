@@ -8,6 +8,7 @@ import com.fortagym.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +94,30 @@ public class NutricionController {
             // Si algo falla, ahora sí veremos el error real en la consola de Java
             logger.error("🔥 Error crítico al guardar la nutrición: ", e);
             return ResponseEntity.internalServerError().body(java.util.Collections.singletonMap("error", "Error interno: " + e.getMessage()));
+        }
+    }
+
+    // ==============================================================
+    // 3. ELIMINAR CARTILLA (Opción Nuclear a BD)
+    // ==============================================================
+    @DeleteMapping("/eliminar/usuario/{usuarioId}")
+    public ResponseEntity<?> eliminarNutricion(@PathVariable Long usuarioId) {
+        logger.info("🗑️ Ejecutando borrado directo en BD para el usuario ID: {}", usuarioId);
+        
+        Usuario usuario = usuarioService.findById(usuarioId);
+        if (usuario == null) {
+            return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("error", "Usuario no encontrado"));
+        }
+
+        // Verificamos si existe antes de disparar
+        if (nutricionRepository.existsByUsuarioId(usuarioId)) {
+            
+            // 🔥 FUEGO: Borrado directo sin pasar por el caché de entidades
+            nutricionRepository.eliminarDirectamentePorUsuarioId(usuarioId);
+            
+            return ResponseEntity.ok(java.util.Collections.singletonMap("mensaje", "✅ Cartilla eliminada correctamente de la BD"));
+        } else {
+            return ResponseEntity.ok(java.util.Collections.singletonMap("mensaje", "El usuario no tenía cartilla"));
         }
     }
 }

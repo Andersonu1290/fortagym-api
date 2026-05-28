@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,11 +25,31 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
+    /**
+     * 🔥 EXCLUSIÓN DE FILTRADO INTEGRAL PARA SWAGGER UI
+     * Le indica a Spring Security qué rutas específicas NO deben ser evaluadas por este filtro.
+     * Al usar términos amplios sin barras fijas, garantizamos que las consultas de metadatos 
+     * internos (como swagger-config o webjars) pasen directo libremente.
+     */
+@Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        
+        // Bloqueo expansivo para que el filtro JWT ignore cualquier archivo estático o JSON de Swagger
+        return path.contains("api-docs") 
+            || path.contains("swagger-ui") 
+            || path.contains("swagger-resources") 
+            || path.contains("swagger-config")
+            || path.contains("webjars");
+    }
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request, 
+                                    @NonNull HttpServletResponse response, 
+                                    @NonNull FilterChain chain)
             throws ServletException, IOException {
 
-        // 1. Revisamos si Angular nos está enviando el token en la "Cabecera" de la petición
+        // 1. Revisamos si Angular nos está enviar el token en la "Cabecera" de la petición
         final String authorizationHeader = request.getHeader("Authorization");
 
         String username = null;
@@ -40,7 +61,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(jwt); // Sacamos el correo del usuario
             } catch (Exception e) {
-                // 🔥 CORRECCIÓN: Si el token está corrupto, limpiamos el contexto
+                // Si el token está corrupto, limpiamos el contexto
                 SecurityContextHolder.clearContext();
                 logger.error("Token inválido o expirado");
             }
@@ -63,7 +84,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } else {
-                // 🔥 CORRECCIÓN: Si la validación falla, limpiamos el contexto
+                // Si la validación falla, limpiamos el contexto
                 SecurityContextHolder.clearContext();
             }
         }

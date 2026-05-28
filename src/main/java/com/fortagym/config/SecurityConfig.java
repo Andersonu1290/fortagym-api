@@ -2,7 +2,6 @@ package com.fortagym.config;
 
 import java.util.Arrays;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,11 +30,9 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final JwtRequestFilter jwtRequestFilter;
 
-    // Lee de application.properties o usa el default
     @Value("${allowed.origins:http://localhost:4200}")
     private String allowedOrigins;
 
-    @Autowired
     public SecurityConfig(CustomUserDetailsService userDetailsService, JwtRequestFilter jwtRequestFilter) {
         this.userDetailsService = userDetailsService;
         this.jwtRequestFilter = jwtRequestFilter;
@@ -61,20 +58,26 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-
             .authorizeHttpRequests(auth -> auth
 
                 // 🚀 Permite pre-flight requests de CORS
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                // 📖 SWAGGER UI & API DOCS (Acceso totalmente libre)
+                .requestMatchers(
+                    "/v3/api-docs",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/swagger-resources/**",
+                    "/webjars/**"
+                ).permitAll()
+
                 // 🛒 RUTAS PÚBLICAS
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
-
-                // 🔥 PROMOCIONES PÚBLICAS
                 .requestMatchers(HttpMethod.GET, "/api/admin/promociones/**").permitAll()
 
                 .requestMatchers(
@@ -85,37 +88,24 @@ public class SecurityConfig {
                     "/js/**",
                     "/img/**",
                     "/registro",
-                    "/api/usuarios/registro"
+                    "/api/usuarios/registro",
+                    "/error"
                 ).permitAll()
 
                 // 🛡️ RUTAS PROTEGIDAS CON AUTORIDAD
-                .requestMatchers(HttpMethod.POST, "/api/rutinas/guardar")
-                    .hasAnyAuthority("ADMIN", "ENTRENADOR")
+                .requestMatchers(HttpMethod.POST, "/api/rutinas/guardar").hasAnyAuthority("ADMIN", "ENTRENADOR")
+                .requestMatchers(HttpMethod.POST, "/api/productos/guardar").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/eliminar/**").hasAuthority("ADMIN")
+                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                .requestMatchers("/api/carrito/**").authenticated()
+                .requestMatchers("/api/calendario/**").authenticated()
 
-                .requestMatchers(HttpMethod.POST, "/api/productos/guardar")
-                    .hasAuthority("ADMIN")
-
-                .requestMatchers(HttpMethod.DELETE, "/api/productos/eliminar/**")
-                    .hasAuthority("ADMIN")
-
-                // 🚀 Regla para Gestión de Usuarios (AdminController)
-                .requestMatchers("/api/admin/**")
-                    .hasAuthority("ADMIN")
-
-                .requestMatchers("/api/carrito/**")
-                    .authenticated()
-
-                .requestMatchers("/api/calendario/**")
-                    .authenticated()
-
-                // 🛡️ RESTO
+                // 🛡️ RESTO DE RUTAS
                 .anyRequest().authenticated()
             )
-
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -123,31 +113,22 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Lee los orígenes dinámicamente según el entorno
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
-
-        configuration.setAllowedMethods(Arrays.asList(
-            "GET",
-            "POST",
-            "PUT",
-            "DELETE",
-            "OPTIONS",
-            "PATCH"
-        ));
-
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        
         configuration.setAllowedHeaders(Arrays.asList(
             "Authorization",
             "Content-Type",
-            "Accept"
+            "Accept",
+            "X-Requested-With",
+            "Origin"
         ));
 
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-
         source.registerCorsConfiguration("/**", configuration);
 
         return source;

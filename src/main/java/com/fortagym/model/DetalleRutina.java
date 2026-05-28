@@ -16,13 +16,15 @@ public class DetalleRutina {
     private String ejercicio;
 
     @NotBlank(message = "Las series y repeticiones son obligatorias")
-    @Pattern(regexp = "^[0-9]{1,2}x[0-9]{1,3}$", 
-             message = "Formato inválido. Ejemplo válido: 4x12")
+    // Acepta "4x12" o "4 x 12" (con espacios)
+    @Pattern(regexp = "^[0-9]{1,2} ?x ?[0-9]{1,3}$", 
+             message = "Formato inválido. Ejemplo válido: 4x12 o 4 x 12")
     private String seriesReps;
 
     @NotBlank(message = "El descanso es obligatorio")
-    @Pattern(regexp = "^[0-9]{1,3} ?(seg|s|min)$",
-             message = "Formato inválido. Ejemplos: 60s, 90 seg, 2 min")
+    // Acepta "60s", "90 seg", y también "60s / 90s" o "60s/90s"
+    @Pattern(regexp = "^[0-9]{1,3} ?(seg|s|min)( ?/ ?[0-9]{1,3} ?(seg|s|min))?$",
+             message = "Formato inválido. Ejemplos: 60s, 90 seg, 60s / 90s")
     private String descanso;
 
     @NotBlank(message = "Debe especificar los días")

@@ -1,5 +1,24 @@
 package com.fortagym.controller;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.fortagym.model.DetalleRutina;
 import com.fortagym.model.Rutina;
 import com.fortagym.model.Usuario;
@@ -7,16 +26,6 @@ import com.fortagym.repository.DetalleRutinaRepository;
 import com.fortagym.repository.NutricionRepository;
 import com.fortagym.service.RutinaService;
 import com.fortagym.service.UsuarioService;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.transaction.annotation.Transactional; // 🔥 Vital
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
 
 @RestController 
 @RequestMapping("/api/rutinas")
@@ -36,7 +45,7 @@ public class RutinaController {
     @Autowired
     private DetalleRutinaRepository detalleRutinaRepository;
 
-    // 1. ESTADO DE USUARIOS (Para la lista del Entrenador)
+   // 1. ESTADO DE USUARIOS (Para la lista del Entrenador)
     @GetMapping("/usuarios-estado")
     public ResponseEntity<List<Map<String, Object>>> listarUsuariosEstado() {
         List<Usuario> usuarios = usuarioService.obtenerSoloUsuarios();
@@ -47,9 +56,17 @@ public class RutinaController {
             map.put("id", u.getId());
             map.put("nombre", u.getNombre() + " " + u.getApellido());
             map.put("email", u.getEmail());
-            map.put("dni", u.getDni()); // 🚀 ¡ESTA ES LA LÍNEA QUE LO ARREGLA TODO!
+            map.put("dni", u.getDni());
             map.put("tieneNutricion", nutricionRepository.existsByUsuarioId(u.getId()));
-            map.put("tieneRutina", rutinaService.buscarPorUsuario(u).isPresent());
+            
+
+            // Evaluamos si la rutina existe Y ADEMÁS tiene al menos 1 detalle adentro
+            Optional<Rutina> rutinaOpt = rutinaService.buscarPorUsuario(u);
+            boolean tieneRutinaReal = rutinaOpt.isPresent() && 
+                                      rutinaOpt.get().getDetalles() != null && 
+                                      !rutinaOpt.get().getDetalles().isEmpty();
+            
+            map.put("tieneRutina", tieneRutinaReal);
             response.add(map);
         }
         return ResponseEntity.ok(response);
@@ -74,10 +91,10 @@ public class RutinaController {
 
     // 3. GUARDAR / EDITAR / ELIMINAR DETALLES
     @PostMapping("/guardar")
-    @Transactional // 🔥 Esto garantiza que si algo falla, no se borre nada
+    @Transactional // 🔥 Garantiza que los cambios se confirmen como una transacción atómica
     public ResponseEntity<?> guardarRutina(@RequestBody Map<String, Object> payload) {
         try {
-            // Extraemos los datos del Map para evitar errores de casteo de objetos anidados
+            // Extraemos los datos del Map de forma segura
             Long usuarioId = Long.valueOf(payload.get("usuarioId").toString());
             String coach = payload.get("nombreEntrenador").toString();
             List<Map<String, String>> detallesInput = (List<Map<String, String>>) payload.get("detalles");
@@ -92,33 +109,46 @@ public class RutinaController {
             
             rutina.setUsuario(usuario);
             rutina.setNombreEntrenador(coach);
-            // La base de datos pide observaciones NOT NULL
             rutina.setObservaciones("Rutina actualizada por coach: " + coach);
 
-            // 🔥 EL TRUCO PARA ELIMINAR DE VERDAD:
-            // Si la rutina ya existe, borramos TODOS sus detalles actuales de la DB.
-            // Luego insertaremos los que vienen de Angular. Así, si borraste uno en el front, 
-            // desaparecerá de la base de datos definitivamente.
-            if (rutina.getId() != null) {
-                detalleRutinaRepository.deleteByRutina(rutina);
+            // GESTIÓN DE COLECCIÓN INTEGRAL PARA HIBERNATE:
+            if (rutina.getDetalles() == null) {
+                rutina.setDetalles(new ArrayList<>());
+            } else {
+                // Al limpiar la lista, 'orphanRemoval = true' de JPA remueve automáticamente 
+                // de la base de datos los registros huérfanos sin entrar en conflicto con el contexto
                 rutina.getDetalles().clear();
             }
 
-            // Guardamos la cabecera para asegurar que tenemos un ID
-            Rutina rutinaGuardada = rutinaService.guardar(rutina);
-
-            // INSERTAR LOS NUEVOS DETALLES (AGREGAR / EDITAR)
+            // INSERTAR LOS NUEVOS DETALLES DIRECTAMENTE A LA ENTIDAD PADRE
             if (detallesInput != null) {
                 for (Map<String, String> d : detallesInput) {
+                    
+                    // 1. EXTRAER DE FORMA SEGURA (Evita ClassCastException si Angular envía números)
+                    String ejercicioStr = d.get("ejercicio") != null ? String.valueOf(d.get("ejercicio")).trim() : "";
+                    String seriesStr = d.get("seriesReps") != null ? String.valueOf(d.get("seriesReps")).trim() : "";
+                    String descansoStr = d.get("descanso") != null ? String.valueOf(d.get("descanso")).trim() : "";
+                    String diasStr = d.get("dias") != null ? String.valueOf(d.get("dias")).trim() : "";
+
+                    // 2. IGNORAR FILAS VACÍAS: Si Angular envía una fila sin nombre de ejercicio, la saltamos
+                    if (ejercicioStr.isEmpty()) {
+                        continue; 
+                    }
+
+                    // 3. ASIGNAR LOS DATOS LIMPIOS (Sin espacios fantasma que rompan tus @Pattern)
                     DetalleRutina nuevoDetalle = new DetalleRutina();
-                    nuevoDetalle.setEjercicio(d.get("ejercicio"));
-                    nuevoDetalle.setSeriesReps(d.get("seriesReps"));
-                    nuevoDetalle.setDescanso(d.get("descanso"));
-                    nuevoDetalle.setDias(d.get("dias"));
-                    nuevoDetalle.setRutina(rutinaGuardada);
-                    detalleRutinaRepository.save(nuevoDetalle);
+                    nuevoDetalle.setEjercicio(ejercicioStr);
+                    nuevoDetalle.setSeriesReps(seriesStr);
+                    nuevoDetalle.setDescanso(descansoStr);
+                    nuevoDetalle.setDias(diasStr);
+                    nuevoDetalle.setRutina(rutina); 
+                    
+                    rutina.getDetalles().add(nuevoDetalle);
                 }
             }
+
+            // Al guardar la entidad raíz (Rutina), las operaciones se propagan en cascada (CascadeType.ALL)
+            rutinaService.guardar(rutina);
 
             return ResponseEntity.ok(Collections.singletonMap("mensaje", "✅ Rutina procesada con éxito"));
 
