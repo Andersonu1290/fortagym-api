@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional; // 🔥 Import clave
 
 import com.fortagym.model.CategoriaProducto;
 import com.fortagym.model.Producto;
@@ -38,6 +39,7 @@ public class ProductoController {
     }
 
     @PostMapping("/guardar")
+    @Transactional // 🔥 Otorga permisos de escritura en la BD para crear/editar
     public ResponseEntity<?> guardarProducto(
             @RequestParam(value = "id", required = false) Long id,
             @RequestParam("nombre") String nombre,
@@ -85,6 +87,7 @@ public class ProductoController {
     }
 
     @DeleteMapping("/eliminar/{id}")
+    @Transactional // 🔥 Otorga permisos de escritura en la BD para borrar
     public ResponseEntity<?> eliminarProducto(@PathVariable Long id) {
         try {
             Producto p = productoService.obtenerPorId(id);
