@@ -22,7 +22,7 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // 1. Angular hará un POST a http://localhost:8090/api/auth/login enviando un JSON
+    // 1. Angular hará un POST a http://localhost:8089/api/auth/login enviando un JSON
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
         try {

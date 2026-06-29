@@ -2,6 +2,7 @@ package com.fortagym.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import java.util.List;
 
 @Entity
 @Table(name = "membresias")
@@ -35,14 +36,27 @@ public class Membresia {
     @Column(name = "imagen_url")
     private String imagenUrl;
 
+    private String fidelidad;
+    private boolean recomendado;
+    
+    @Column(name = "color_boton")
+    private String colorBoton;
+
+    @OneToMany(mappedBy = "membresia", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BeneficioMembresia> features;
+
     public Membresia() {}
 
-    public Membresia(String tipo, int duracionMeses, String descripcion, double precio, String imagenUrl) {
+    public Membresia(String tipo, int duracionMeses, String descripcion, double precio, String imagenUrl, String fidelidad, boolean recomendado, String colorBoton, List<BeneficioMembresia> features) {
         this.tipo = tipo;
         this.duracionMeses = duracionMeses;
         this.descripcion = descripcion;
         this.precio = precio;
         this.imagenUrl = imagenUrl;
+        this.fidelidad = fidelidad;
+        this.recomendado = recomendado;
+        this.colorBoton = colorBoton;
+        this.features = features;
     }
 
     // Getters y Setters
@@ -93,4 +107,15 @@ public class Membresia {
     public void setImagenUrl(String imagenUrl) {
         this.imagenUrl = imagenUrl;
     }
+    public String getFidelidad() { return fidelidad; }
+    public void setFidelidad(String fidelidad) { this.fidelidad = fidelidad; }
+    
+    public boolean isRecomendado() { return recomendado; }
+    public void setRecomendado(boolean recomendado) { this.recomendado = recomendado; }
+
+    public String getColorBoton() { return colorBoton; }
+    public void setColorBoton(String colorBoton) { this.colorBoton = colorBoton; }
+
+    public List<BeneficioMembresia> getFeatures() { return features; }
+    public void setFeatures(List<BeneficioMembresia> features) { this.features = features; }
 }

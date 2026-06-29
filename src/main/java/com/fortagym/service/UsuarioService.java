@@ -26,6 +26,10 @@ public class UsuarioService {
             throw new EmailAlreadyExistsException("El correo ya está en uso");
         }
 
+        if (usuarioRepository.findByDni(usuario.getDni()).isPresent()) {
+            throw new DniAlreadyExistsException("El DNI ya está en uso");
+        }
+
         usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
         usuario.setRol(Rol.USUARIO);
 

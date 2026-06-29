@@ -8,7 +8,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
@@ -54,10 +56,17 @@ public class Usuario {
 
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
     private Nutricion nutricion;
+    
+    @ManyToOne
+    @JoinColumn(name = "membresia_activa_id")
+    private Membresia membresiaActiva;
+
+    @Column(name = "fecha_fin_membresia")
+    private java.time.LocalDateTime fechaFinMembresia;
 
     public Usuario() {}
 
-    public Usuario(String nombre, String apellido, String dni, String email, String password, Rol rol, byte[] fotoPerfil) {
+    public Usuario(String nombre, String apellido, String dni, String email, String password, Rol rol, byte[] fotoPerfil, Membresia membresiaActiva, java.time.LocalDateTime fechaFinMembresia) {
         this.nombre = nombre;
         this.apellido = apellido;
         this.dni = dni;
@@ -65,6 +74,8 @@ public class Usuario {
         this.password = password;
         this.rol = rol;
         this.fotoPerfil = fotoPerfil;
+        this.membresiaActiva = membresiaActiva;
+        this.fechaFinMembresia = fechaFinMembresia;
     }
 
     // Getters y Setters
@@ -95,4 +106,10 @@ public class Usuario {
 
     public Nutricion getNutricion() { return nutricion; }
     public void setNutricion(Nutricion nutricion) { this.nutricion = nutricion; }
+
+    public Membresia getMembresiaActiva() { return membresiaActiva; }
+    public void setMembresiaActiva(Membresia membresiaActiva) { this.membresiaActiva = membresiaActiva; }
+
+    public java.time.LocalDateTime getFechaFinMembresia() { return fechaFinMembresia; }
+    public void setFechaFinMembresia(java.time.LocalDateTime fechaFinMembresia) { this.fechaFinMembresia = fechaFinMembresia; }    
 }

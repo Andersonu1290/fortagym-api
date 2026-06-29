@@ -46,8 +46,8 @@ class AdminControllerIntegrationTest {
 
     @Test
     void verUsuarios_get_muestra_lista() throws Exception {
-        Usuario u1 = new Usuario("Alfredo","Baldeon", "11111111", "a@test.com","1234567", Rol.USUARIO, null);
-        Usuario u2 = new Usuario("Ccarlos","Desmond", "22222222", "c@test.com","1234567", Rol.ADMIN, null);
+        Usuario u1 = new Usuario("Alfredo","Baldeon", "11111111", "a@test.com","1234567", Rol.USUARIO, null, null, null);
+        Usuario u2 = new Usuario("Ccarlos","Desmond", "22222222", "c@test.com","1234567", Rol.ADMIN, null, null, null);
         usuarioRepository.saveAll(List.of(u1,u2));
 
         mockMvc.perform(get("/admin"))
@@ -56,7 +56,7 @@ class AdminControllerIntegrationTest {
 
     @Test
     void cambiarRol_y_eliminar_usuario_flow() throws Exception {
-        Usuario u = new Usuario("Cambe","User", "33333333", "cambio@test.com","1234567", Rol.USUARIO, null);
+        Usuario u = new Usuario("Cambe","User", "33333333", "cambio@test.com","1234567", Rol.USUARIO, null, null, null);
         usuarioRepository.save(u);
 
         mockMvc.perform(post("/admin/cambiar-rol/{id}", u.getId())

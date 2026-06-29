@@ -14,6 +14,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     
     // Consultas automáticas de Spring Data (Derived Queries)
     Optional<Usuario> findByEmail(String email);
+    Optional<Usuario> findByDni(String dni);
 
     List<Usuario> findByRol(Rol rol);
 

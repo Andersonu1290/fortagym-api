@@ -65,7 +65,7 @@ class CartillaControllerIntegrationTest {
 
     @Test
     void verCartilla_y_exportarExcel_flow() throws Exception {
-        Usuario u = new Usuario("C","U", "44444444", "cartilla@test.com","123456", Rol.USUARIO, null);
+        Usuario u = new Usuario("C","U", "44444444", "cartilla@test.com","123456", Rol.USUARIO, null, null, null);
         usuarioRepository.save(u);
 
         Nutricion n = new Nutricion(u, "analisis", "obs");

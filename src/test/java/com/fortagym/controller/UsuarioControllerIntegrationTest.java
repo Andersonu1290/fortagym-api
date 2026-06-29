@@ -67,7 +67,7 @@ class UsuarioControllerIntegrationTest {
     @Test
     void subirFotoPerfil_y_mostrarFoto_flow() throws Exception {
         // Crear usuario
-        Usuario u = new Usuario("A","B", "88888888", "foto@test.com", passwordEncoder.encode("pwd"), Rol.USUARIO, null);
+        Usuario u = new Usuario("A","B", "88888888", "foto@test.com", passwordEncoder.encode("pwd"), Rol.USUARIO, null, null, null);
         usuarioRepository.save(u);
 
         MockMultipartFile img = new MockMultipartFile("foto", "foto.jpg", "image/jpeg", new byte[]{1,2,3,4});
@@ -93,7 +93,7 @@ class UsuarioControllerIntegrationTest {
 
     @Test
     void actualizarUsuario_post_actualiza_nombres_y_password() throws Exception {
-        Usuario u = new Usuario("X","Y", "99999999", "change@test.com", passwordEncoder.encode("old"), Rol.USUARIO, null);
+        Usuario u = new Usuario("X","Y", "99999999", "change@test.com", passwordEncoder.encode("old"), Rol.USUARIO, null, null, null);
         usuarioRepository.save(u);
 
         Principal principal = () -> "change@test.com";

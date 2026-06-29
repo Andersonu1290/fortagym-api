@@ -145,9 +145,9 @@
         SWAGGER / OPENAPI UI (AUTO-DOCUMENTACIÓN DE APIS (api rest))
         Genera automáticamente la interfaz gráfica interactiva y la 
         especificación JSON de todas tus rutas REST sin escribir código extra.
-        Para ver la interfaz gráfica interactiva: http://localhost:8090/swagger-ui/index.html
-        Para ver el JSON puro de la documentación: http://localhost:8090/v3/api-docs
-        Para ver la redirección de acceso corto: http://localhost:8090/swagger-ui.html
+        Para ver la interfaz gráfica interactiva: http://localhost:8089/swagger-ui/index.html
+        Para ver el JSON puro de la documentación: http://localhost:8089/v3/api-docs
+        Para ver la redirección de acceso corto: http://localhost:8089/swagger-ui.html
         ===================================================================
         -->
         <dependency>

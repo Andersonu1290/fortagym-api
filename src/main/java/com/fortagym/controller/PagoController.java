@@ -62,8 +62,9 @@ public class PagoController {
         String metodoNormalizado = request.getMetodoPago().trim().toLowerCase();
 
         // 5. Registrar el pago
+        // 5. Registrar el pago
         Pago pago = new Pago();
-        pago.setNumeroOperacion(request.getNumeroOperacion()); // 🚀 Asignamos el código de la transacción
+        pago.setNumeroOperacion(request.getNumeroOperacion()); 
         pago.setMetodoPago(metodoNormalizado);
         pago.setMembresia(membresia);
         pago.setUsuario(usuario);
@@ -71,6 +72,13 @@ public class PagoController {
 
         if (metodoNormalizado.equals("tarjeta")) {
             pago.setEstado("verificado");
+            
+            // 🔥 MAGIA AQUÍ: Le damos los privilegios al usuario instantáneamente
+            usuario.setMembresiaActiva(membresia);
+            // Calculamos la fecha de fin sumando los meses que dura la membresía
+            usuario.setFechaFinMembresia(java.time.LocalDateTime.now().plusMonths(membresia.getDuracionMeses()));
+            usuarioRepository.save(usuario); // Guardamos la actualización del usuario
+            
         } else {
             pago.setEstado("pendiente");
         }
