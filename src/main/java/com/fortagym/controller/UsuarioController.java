@@ -17,8 +17,8 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController // ⬅️ Convertido a API REST
-@RequestMapping("/api/usuarios") // ⬅️ Nueva ruta base
+@RestController
+@RequestMapping("/api/usuarios")
 public class UsuarioController {
 
     @Autowired
@@ -28,14 +28,13 @@ public class UsuarioController {
     private UsuarioRepository usuarioRepository;
 
     // =======================
-    // 1. REGISTRO DESDE ANGULAR
+    // 1. REGISTRO
     // =======================
     @PostMapping("/registro")
     public ResponseEntity<?> registrarUsuario(@RequestBody Usuario usuario) {
         try {
             Usuario nuevoUsuario = usuarioService.registrar(usuario);
-            // 🔒 Por seguridad, NUNCA devolvemos la contraseña al frontend
-            nuevoUsuario.setPassword(null);
+            // Gracias a @JsonIgnore en el Modelo, no es necesario hacer setPassword(null)
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
         } catch (EmailAlreadyExistsException e) {
             Map<String, String> response = new HashMap<>();
@@ -45,22 +44,17 @@ public class UsuarioController {
     }
 
     // =======================
-    // 2. OBTENER PERFIL DEL USUARIO LOGUEADO
+    // 2. OBTENER PERFIL
     // =======================
     @GetMapping("/perfil")
     public ResponseEntity<?> obtenerPerfil(Principal principal) {
-        // Principal es un objeto de Spring que lee el Token JWT y extrae el email
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new MensajeResponse("No autorizado"));
         }
         
         Usuario usuario = usuarioRepository.findByEmail(principal.getName())
-    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        if (usuario == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new MensajeResponse("Usuario no encontrado"));
-        }
-        
-        usuario.setPassword(null); // Ocultar contraseña
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
         return ResponseEntity.ok(usuario);
     }
 
@@ -70,7 +64,7 @@ public class UsuarioController {
     @PutMapping("/perfil")
     public ResponseEntity<?> actualizarPerfil(@RequestBody Map<String, String> datosActualizados, Principal principal) {
         Usuario usuario = usuarioRepository.findByEmail(principal.getName())
-    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         if (datosActualizados.containsKey("nombre")) {
             usuario.setNombre(datosActualizados.get("nombre"));
@@ -83,12 +77,11 @@ public class UsuarioController {
         }
 
         usuarioService.guardar(usuario);
-        usuario.setPassword(null);
         return ResponseEntity.ok(usuario);
     }
 
     // =======================
-    // 4. SUBIR FOTO DE PERFIL
+    // 4. SUBIR FOTO
     // =======================
     @PostMapping("/perfil/foto")
     public ResponseEntity<?> subirFotoPerfil(@RequestParam("foto") MultipartFile archivo, Principal principal) {
@@ -97,7 +90,7 @@ public class UsuarioController {
         }
         try {
             Usuario usuario = usuarioRepository.findByEmail(principal.getName())
-    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             usuario.setFotoPerfil(archivo.getBytes());
             usuarioService.guardar(usuario);
             return ResponseEntity.ok(new MensajeResponse("Foto actualizada correctamente."));
@@ -123,7 +116,7 @@ public class UsuarioController {
     }
 
     // =======================
-    // 6. OBTENER CUALQUIER USUARIO POR ID (Ideal para el Admin o Entrenador)
+    // 6. OBTENER POR ID
     // =======================
     @GetMapping("/{id}")
     public ResponseEntity<?> obtenerUsuarioPorId(@PathVariable Long id) {
@@ -133,7 +126,6 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new MensajeResponse("Usuario no encontrado"));
         }
         
-        usuario.setPassword(null); // Siempre ocultar contraseña
         return ResponseEntity.ok(usuario);
     }
 }

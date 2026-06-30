@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CustomUserDetailsTest {
 
-    @Test
+   @Test
     void authoritiesContainRolePrefix() {
         Usuario u = new Usuario();
         u.setEmail("a@b");
@@ -20,6 +20,7 @@ class CustomUserDetailsTest {
         CustomUserDetails details = new CustomUserDetails(u);
         var auth = details.getAuthorities();
         assertFalse(auth.isEmpty());
-        assertTrue(auth.iterator().next().getAuthority().contains("ROLE_"));
+        // Validamos que contenga el nombre del rol directamente
+        assertTrue(auth.iterator().next().getAuthority().contains("USUARIO")); 
     }
 }

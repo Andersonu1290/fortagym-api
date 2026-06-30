@@ -1,21 +1,23 @@
 package com.fortagym.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +30,10 @@ import com.fortagym.repository.DetalleRutinaRepository;
 import com.fortagym.repository.RutinaRepository;
 import com.fortagym.repository.UsuarioRepository;
 
-
 @SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)  // ❗ Desactiva los filtros de seguridad
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @Import(TestBeansConfig.class)
-
-
 @Transactional
 class RutinaControllerIntegrationTest {
 
@@ -59,47 +58,125 @@ class RutinaControllerIntegrationTest {
 
     @Test
     void guardarRutina_crea_rutina_y_detalles() throws Exception {
-        Usuario u = new Usuario("Rut","Ulisa", "66666666", "rut@test.com","123456", Rol.USUARIO, null, null, null);
-        usuarioRepository.save(u);
 
-        mockMvc.perform(post("/rutina/guardar")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .param("usuarioId", u.getId().toString())
-                .param("observaciones", "obs")
-                .param("nombreEntrenador", "Trainer")
-                .param("ejercicio", "Sentadillas")
-                .param("seriesReps", "3x12")
-                .param("descanso", "60s")
-                .param("dias", "Lunes"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(redirectedUrl("/rutina/usuarios"));
+        Usuario usuario = new Usuario(
+                "Rut",
+                "Ulisa",
+                "66666666",
+                "rut@test.com",
+                "123456",
+                Rol.USUARIO,
+                null,
+                null,
+                null);
+
+        usuarioRepository.save(usuario);
+
+        String json = """
+        {
+          "usuarioId": %d,
+          "nombreEntrenador": "Trainer",
+          "detalles": [
+            {
+              "ejercicio":"Sentadillas",
+              "seriesReps":"3x12",
+              "descanso":"60s",
+              "dias":"Lunes"
+            }
+          ]
+        }
+        """.formatted(usuario.getId());
+
+        mockMvc.perform(post("/api/rutinas/guardar")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").exists());
 
         List<Rutina> rutinas = rutinaRepository.findAll();
+
         assertThat(rutinas).hasSize(1);
-        Rutina r = rutinas.get(0);
-        assertThat(r.getNombreEntrenador()).isEqualTo("Trainer");
-        List<DetalleRutina> detalles = detalleRutinaRepository.findByRutina(r);
-        assertThat(detalles).isNotEmpty();
+
+        Rutina rutina = rutinas.get(0);
+
+        assertThat(rutina.getNombreEntrenador()).isEqualTo("Trainer");
+
+        List<DetalleRutina> detalles = detalleRutinaRepository.findByRutina(rutina);
+
+        assertThat(detalles).hasSize(1);
         assertThat(detalles.get(0).getEjercicio()).isEqualTo("Sentadillas");
+        assertThat(detalles.get(0).getSeriesReps()).isEqualTo("3x12");
+        assertThat(detalles.get(0).getDescanso()).isEqualTo("60s");
+        assertThat(detalles.get(0).getDias()).isEqualTo("Lunes");
     }
 
     @Test
-    @WithMockUser(username = "test@test.com", roles = {"USER"})
-    void editarRutina_get_devuelve_rutina_existente() throws Exception {
-        Usuario u = new Usuario("Esteban","Dario", "77777777", "edit@test.com","123456", Rol.USUARIO, null, null, null);
-        usuarioRepository.save(u);
+    void obtenerRutina_usuarioConRutina_devuelveDatos() throws Exception {
 
-        Rutina r = new Rutina("obs","T", u);
-        DetalleRutina d = new DetalleRutina();
-        d.setEjercicio("Press");
-        d.setSeriesReps("4x10");
-        d.setDescanso("60s");
-        d.setDias("Miercoles");
-        d.setRutina(r);
-        r.getDetalles().add(d);
-        rutinaRepository.save(r);
+        Usuario usuario = new Usuario(
+                "Esteban",
+                "Dario",
+                "77777777",
+                "edit@test.com",
+                "123456",
+                Rol.USUARIO,
+                null,
+                null,
+                null);
 
-        mockMvc.perform(get("/rutina/editar/{usuarioId}", u.getId()))
-            .andExpect(status().isOk());
+        usuarioRepository.save(usuario);
+
+        Rutina rutina = new Rutina();
+        rutina.setUsuario(usuario);
+        rutina.setNombreEntrenador("Trainer");
+        rutina.setObservaciones("Observaciones");
+
+        rutinaRepository.save(rutina);
+
+        DetalleRutina detalle = new DetalleRutina();
+        detalle.setRutina(rutina);
+        detalle.setEjercicio("Press");
+        detalle.setSeriesReps("4x10");
+        detalle.setDescanso("60s");
+        detalle.setDias("Miércoles");
+
+        detalleRutinaRepository.save(detalle);
+
+        mockMvc.perform(get("/api/rutinas/usuario/{id}", usuario.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.nombreEntrenador").value("Trainer"))
+                .andExpect(jsonPath("$.detalles[0].ejercicio").value("Press"))
+                .andExpect(jsonPath("$.detalles[0].seriesReps").value("4x10"))
+                .andExpect(jsonPath("$.detalles[0].descanso").value("60s"))
+                .andExpect(jsonPath("$.detalles[0].dias").value("Miércoles"));
+    }
+
+    @Test
+    void obtenerRutina_usuarioSinRutina_devuelveMensaje() throws Exception {
+
+        Usuario usuario = new Usuario(
+                "Juan",
+                "Perez",
+                "88888888",
+                "juan@test.com",
+                "123456",
+                Rol.USUARIO,
+                null,
+                null,
+                null);
+
+        usuarioRepository.save(usuario);
+
+        mockMvc.perform(get("/api/rutinas/usuario/{id}", usuario.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").value("Sin rutina"));
+    }
+
+    @Test
+    void obtenerRutina_usuarioInexistente_devuelve404() throws Exception {
+
+        mockMvc.perform(get("/api/rutinas/usuario/999999"))
+                .andExpect(status().isNotFound());
     }
 }

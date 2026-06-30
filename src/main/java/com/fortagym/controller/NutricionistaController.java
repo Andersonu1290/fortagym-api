@@ -107,4 +107,67 @@ public class NutricionistaController {
 
         return ResponseEntity.ok(Collections.singletonMap("mensaje", "Reserva confirmada."));
     }
+
+    // ==========================================
+    // PANEL DE NUTRICIONISTA: GESTIÓN DE HORARIOS
+    // ==========================================
+
+    // 1. OBTENER MIS HORARIOS
+    @GetMapping("/mis-horarios")
+    public ResponseEntity<?> obtenerMisHorarios(Principal principal) {
+        if (principal == null) return ResponseEntity.status(401).build();
+        Usuario usuario = usuarioRepository.findByEmail(principal.getName()).orElseThrow();
+        
+        String sql = "SELECT * FROM horarios_nutricionista WHERE nutricionista_id = ? ORDER BY FIELD(dia, 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'), hora";
+        return ResponseEntity.ok(jdbcTemplate.queryForList(sql, usuario.getId()));
+    }
+
+    // 2. CREAR O EDITAR HORARIO
+    @PostMapping("/mis-horarios")
+    @Transactional
+    public ResponseEntity<?> guardarHorario(@RequestBody Map<String, Object> payload, Principal principal) {
+        Usuario usuario = usuarioRepository.findByEmail(principal.getName()).orElseThrow();
+        
+        String dia = payload.get("dia").toString();
+        String hora = payload.get("hora").toString();
+        int duracion = Integer.parseInt(payload.get("duracion_minutos").toString());
+        String descripcion = payload.get("descripcion").toString();
+        String temas = payload.get("temas").toString(); // 🔥 Aquí usamos 'temas' en lugar de 'ejercicios'
+        
+        if (payload.get("id") != null) {
+            // EDITAR
+            Long id = Long.valueOf(payload.get("id").toString());
+            String sql = "UPDATE horarios_nutricionista SET dia=?, hora=?, duracion_minutos=?, descripcion=?, temas=? WHERE id=? AND nutricionista_id=?";
+            jdbcTemplate.update(sql, dia, hora, duracion, descripcion, temas, id, usuario.getId());
+            return ResponseEntity.ok(Collections.singletonMap("mensaje", "Horario actualizado con éxito"));
+        } else {
+            // CREAR NUEVO
+            String sql = "INSERT INTO horarios_nutricionista (nutricionista_id, dia, hora, duracion_minutos, descripcion, temas, disponible) VALUES (?, ?, ?, ?, ?, ?, true)";
+            jdbcTemplate.update(sql, usuario.getId(), dia, hora, duracion, descripcion, temas);
+            return ResponseEntity.ok(Collections.singletonMap("mensaje", "Nuevo horario creado"));
+        }
+    }
+
+    // 3. CAMBIAR ESTADO (DISPONIBLE / NO DISPONIBLE)
+    @PutMapping("/mis-horarios/{id}/estado")
+    @Transactional
+    public ResponseEntity<?> cambiarEstadoHorario(@PathVariable Long id, Principal principal) {
+        Usuario usuario = usuarioRepository.findByEmail(principal.getName()).orElseThrow();
+        
+        String sql = "UPDATE horarios_nutricionista SET disponible = NOT disponible WHERE id = ? AND nutricionista_id = ?";
+        int afectadas = jdbcTemplate.update(sql, id, usuario.getId());
+        
+        if(afectadas > 0) return ResponseEntity.ok(Collections.singletonMap("mensaje", "Estado actualizado"));
+        return ResponseEntity.badRequest().body(Collections.singletonMap("error", "No se pudo actualizar"));
+    }
+
+    // 4. ELIMINAR HORARIO
+    @DeleteMapping("/mis-horarios/{id}")
+    @Transactional
+    public ResponseEntity<?> eliminarHorario(@PathVariable Long id, Principal principal) {
+        Usuario usuario = usuarioRepository.findByEmail(principal.getName()).orElseThrow();
+        String sql = "DELETE FROM horarios_nutricionista WHERE id = ? AND nutricionista_id = ?";
+        jdbcTemplate.update(sql, id, usuario.getId());
+        return ResponseEntity.ok(Collections.singletonMap("mensaje", "Horario eliminado"));
+    }
 }

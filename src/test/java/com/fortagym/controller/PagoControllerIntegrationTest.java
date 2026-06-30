@@ -2,7 +2,10 @@ package com.fortagym.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,12 +13,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fortagym.config.TestBeansConfig;
-import com.fortagym.config.WithMockCustomUser;
 import com.fortagym.model.Membresia;
 import com.fortagym.model.Pago;
 import com.fortagym.model.Rol;
@@ -25,10 +30,11 @@ import com.fortagym.repository.PagoRepository;
 import com.fortagym.repository.UsuarioRepository;
 
 @SpringBootTest
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc // Elimina 'addFilters = false' si quieres probar tu seguridad real
 @ActiveProfiles("test")
 @Import(TestBeansConfig.class)
 @Transactional
+@WithMockUser(username = "pagador@test.com", roles = {"USUARIO"})
 class PagoControllerIntegrationTest {
 
     @Autowired
@@ -43,72 +49,77 @@ class PagoControllerIntegrationTest {
     @Autowired
     private PagoRepository pagoRepository;
 
-    @BeforeEach
-void setupUsers() {
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    if (usuarioRepository.findByEmail("pagador@test.com").isEmpty()) {
-        Usuario u1 = new Usuario();
-        u1.setNombre("Pagador");
-        u1.setApellido("Test");
-        u1.setEmail("pagador@test.com");
-        u1.setPassword("123456"); // o hash, no importa en el test
-        u1.setRol(Rol.USUARIO);
+    @BeforeEach
+    void setupUsers() {
+        pagoRepository.deleteAll();
+        membresiaRepository.deleteAll();
+        usuarioRepository.deleteAll();
+
+        Usuario u1 = new Usuario("Pagador", "Test", "12345678", "pagador@test.com", "123456", Rol.USUARIO, null, null, null);
         usuarioRepository.save(u1);
     }
 
-    if (usuarioRepository.findByEmail("pagador2@test.com").isEmpty()) {
-        Usuario u2 = new Usuario();
-        u2.setNombre("Pagador2");
-        u2.setApellido("Test");
-        u2.setEmail("pagador2@test.com");
-        u2.setPassword("123456");
-        u2.setRol(Rol.USUARIO);
-        usuarioRepository.save(u2);
+    @Test
+    void confirmarPago_conTarjeta_registraPagoVerificado() throws Exception {
+        Membresia membresia = new Membresia();
+        membresia.setTipo("Gold");
+        membresia.setDuracionMeses(1);
+        membresia.setDescripcion("desc");
+        membresia.setPrecio(100.0);
+        membresiaRepository.save(membresia);
+
+        // Crear el objeto Request directamente para que sea consistente con tu API
+        String jsonRequest = """
+                {
+                  "numeroOperacion": "OP-123456",
+                  "metodoPago": "tarjeta",
+                  "membresiaId": %d
+                }
+                """.formatted(membresia.getId());
+
+        mockMvc.perform(post("/api/pagos/confirmar")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").value("Pago procesado correctamente"))
+                .andExpect(jsonPath("$.estado").value("verificado"))
+                .andExpect(jsonPath("$.metodo").value("tarjeta"));
+
+        List<Pago> pagos = pagoRepository.findAll();
+        assertThat(pagos).hasSize(1);
+        assertThat(pagos.get(0).getEstado()).isEqualToIgnoringCase("verificado");
     }
-}
 
+    @Test
+    void confirmarPago_presencial_registraPagoPendiente() throws Exception {
+        Membresia membresia = new Membresia();
+        membresia.setTipo("Silver");
+        membresia.setDuracionMeses(1);
+        membresia.setDescripcion("desc");
+        membresia.setPrecio(50.0);
+        membresiaRepository.save(membresia);
 
-@Test
-@WithMockCustomUser(email = "pagador@test.com")
-void confirmarPago_con_tarjeta_registra_pago_y_muestra_confirmacionTarjeta() throws Exception {
+        String jsonRequest = """
+                {
+                  "numeroOperacion": "OP-987654",
+                  "metodoPago": "presencial",
+                  "membresiaId": %d
+                }
+                """.formatted(membresia.getId());
 
-    Membresia m = new Membresia();
-    m.setTipo("Gold");
-    m.setDuracionMeses(1);
-    m.setDescripcion("desc");
-    m.setPrecio(100.0);
-    membresiaRepository.save(m);
+        mockMvc.perform(post("/api/pagos/confirmar")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mensaje").value("Pago procesado correctamente"))
+                .andExpect(jsonPath("$.estado").value("pendiente"))
+                .andExpect(jsonPath("$.metodo").value("presencial"));
 
-    mockMvc.perform(post("/pago/confirmar")
-            .param("dni", "12345678")
-            .param("metodoPago", "tarjeta")
-            .param("membresiaId", m.getId().toString()))
-        .andExpect(status().isOk());
-
-    assertThat(pagoRepository.findAll()).hasSize(1);
-    Pago pago = pagoRepository.findAll().get(0);
-    assertThat(pago.getEstado().toLowerCase()).isEqualTo("verificado");
-    assertThat(pago.getMonto()).isEqualTo(m.getPrecio());
-}
-
-@Test
-@WithMockCustomUser(email = "pagador2@test.com")
-void confirmarPago_presencial_registra_pago_estado_pendiente() throws Exception {
-
-    Membresia m = new Membresia();
-    m.setTipo("Silver");
-    m.setDuracionMeses(1);
-    m.setDescripcion("d");
-    m.setPrecio(50.0);
-    membresiaRepository.save(m);
-
-    mockMvc.perform(post("/pago/confirmar")
-            .param("dni", "87654321")
-            .param("metodoPago", "presencial")
-            .param("membresiaId", m.getId().toString()))
-        .andExpect(status().isOk());
-
-    assertThat(pagoRepository.findAll()).hasSize(1);
-    assertThat(pagoRepository.findAll().get(0).getEstado().toLowerCase()).isEqualTo("pendiente");
-}
+        List<Pago> pagos = pagoRepository.findAll();
+        assertThat(pagos).hasSize(1);
+        assertThat(pagos.get(0).getEstado()).isEqualToIgnoringCase("pendiente");
+    }
 }

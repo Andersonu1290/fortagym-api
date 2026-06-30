@@ -20,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayOutputStream;
@@ -31,6 +32,7 @@ import java.util.Map;
 
 @RestController 
 @RequestMapping("/api/cartilla")
+@Transactional(readOnly = true) // 🔥 Optimización: Solo lectura para este controlador
 public class CartillaController {
 
     private static final Logger logger = LoggerFactory.getLogger(CartillaController.class);
@@ -64,13 +66,12 @@ public class CartillaController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new MensajeResponse("Usuario no encontrado"));
         }
 
-        usuario.setPassword(null); // Siempre por seguridad
+        // ❌ BORRADO: ya no necesitamos usuario.setPassword(null); Gracias a @JsonIgnore
 
         Nutricion nutricion = nutricionRepository.findByUsuario(usuario).orElse(null);
         Rutina rutina = rutinaRepository.findByUsuario(usuario).orElse(null);
         List<DetalleRutina> detalles = rutina != null ? detalleRutinaRepository.findByRutina(rutina) : Collections.emptyList();
 
-        // Agrupamos todo en un solo objeto JSON utilizando un Map
         Map<String, Object> response = new HashMap<>();
         response.put("usuario", usuario);
         response.put("nutricion", nutricion);
@@ -110,8 +111,6 @@ public class CartillaController {
                 sheetNutri.getRow(3).createCell(1).setCellValue(nutricion.getFechaRegistro().toString());
                 sheetNutri.createRow(4).createCell(0).setCellValue("Observaciones");
                 sheetNutri.getRow(4).createCell(1).setCellValue(nutricion.getObservaciones());
-            } else {
-                sheetNutri.createRow(2).createCell(0).setCellValue("Sin datos nutricionales.");
             }
 
             // --- HOJA 2: RUTINA ---
@@ -137,20 +136,15 @@ public class CartillaController {
                     row.createCell(2).setCellValue(d.getDescanso());
                     row.createCell(3).setCellValue(d.getDias());
                 }
-            } else {
-                sheetRutina.createRow(2).createCell(0).setCellValue("Sin rutina registrada.");
             }
 
             workbook.write(out);
 
-            // Configuramos los headers para la descarga del archivo en una API REST
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             headers.setContentDispositionFormData("attachment", "cartilla_" + usuario.getNombre() + ".xlsx");
 
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(out.toByteArray());
+            return ResponseEntity.ok().headers(headers).body(out.toByteArray());
 
         } catch (IOException e) {
             logger.error("❌ Error al generar el Excel: {}", e.getMessage());

@@ -17,7 +17,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 @Entity
 @Table(name = "usuarios")
 public class Usuario {
@@ -43,7 +44,8 @@ public class Usuario {
     @Column(unique = true, length = 100)
     private String email;
 
-    @NotBlank
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // 🔥 ESTA ES LA CLAVE
+    @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 6)
     private String password;
 
