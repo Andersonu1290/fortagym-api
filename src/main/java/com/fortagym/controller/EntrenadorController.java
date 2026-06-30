@@ -71,28 +71,134 @@ public class EntrenadorController {
     @PostMapping("/reservar/{horarioId}")
     @Transactional
     public ResponseEntity<?> reservarHorario(@PathVariable Long horarioId, Principal principal) {
-        if (principal == null) return ResponseEntity.status(401).body(Collections.singletonMap("error", "No autorizado"));
-
+    
+        if (principal == null) {
+            return ResponseEntity.status(401)
+                    .body(Collections.singletonMap("error", "No autorizado"));
+        }
+    
         Usuario usuario = usuarioRepository.findByEmail(principal.getName())
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        // 🔥 VALIDACIÓN DE MEMBRESÍA: Solo si tiene membresía activa puede reservar
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    
+        // ============================
+        // 1. VALIDAR MEMBRESÍA
+        // ============================
         if (usuario.getMembresiaActiva() == null) {
-            return ResponseEntity.status(403).body(Collections.singletonMap("error", "Debes adquirir una membresía activa para reservar entrenadores."));
+            return ResponseEntity.status(403)
+                    .body(Collections.singletonMap("error",
+                            "Debes adquirir una membresía para reservar."));
         }
-
-        // Verificar si el horario sigue disponible
-        String sqlCheck = "SELECT disponible FROM horarios_entrenador WHERE id = ?";
-        Boolean disponible = jdbcTemplate.queryForObject(sqlCheck, Boolean.class, horarioId);
-
+    
+        // ============================
+        // 2. VALIDAR LÍMITE DE RESERVAS
+        // ============================
+        String sqlCount = """
+            SELECT COUNT(*)
+            FROM reservas_entrenamiento
+            WHERE usuario_id = ?
+              AND MONTH(fecha_reserva) = MONTH(CURRENT_DATE())
+              AND YEAR(fecha_reserva) = YEAR(CURRENT_DATE())
+            """;
+    
+        Integer reservasEsteMes = jdbcTemplate.queryForObject(
+                sqlCount,
+                Integer.class,
+                usuario.getId()
+        );
+    
+        int limite = usuario.getMembresiaActiva().getLimiteReservasMensuales() != null
+                ? usuario.getMembresiaActiva().getLimiteReservasMensuales()
+                : 0;
+    
+        if (reservasEsteMes != null && reservasEsteMes >= limite) {
+            return ResponseEntity.status(403)
+                    .body(Collections.singletonMap(
+                            "error",
+                            "Has alcanzado tu límite de "
+                                    + limite
+                                    + " reservas este mes con el "
+                                    + usuario.getMembresiaActiva().getTipo()
+                    ));
+        }
+    
+        // ============================
+        // 3. OBTENER INFORMACIÓN DEL HORARIO
+        // ============================
+        String sqlCheck = """
+            SELECT
+                h.dia,
+                h.hora,
+                h.descripcion,
+                h.disponible,
+                CONCAT(u.nombre,' ',u.apellido) AS entrenador
+            FROM horarios_entrenador h
+            JOIN usuarios u
+                ON h.entrenador_id = u.id
+            WHERE h.id = ?
+            """;
+    
+        Map<String, Object> horarioDb = jdbcTemplate.queryForMap(sqlCheck, horarioId);
+    
+        Boolean disponible = (Boolean) horarioDb.get("disponible");
+    
         if (disponible == null || !disponible) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "El horario ya no está disponible."));
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap(
+                            "error",
+                            "El horario ya no está disponible."
+                    ));
         }
-
-        // Registrar la reserva y marcar el horario como ocupado
-        jdbcTemplate.update("INSERT INTO reservas_entrenamiento (usuario_id, horario_id) VALUES (?, ?)", usuario.getId(), horarioId);
-        jdbcTemplate.update("UPDATE horarios_entrenador SET disponible = false WHERE id = ?", horarioId);
-
-        return ResponseEntity.ok(Collections.singletonMap("mensaje", "Reserva confirmada con éxito."));
+    
+        String tituloEvento = "Entrenamiento: " + horarioDb.get("descripcion");
+    
+        // Ejemplo: reserva para dentro de 2 días
+        java.time.LocalDateTime fechaSesion = java.time.LocalDateTime.now()
+                .plusDays(2)
+                .withHour(8)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+    
+        // ============================
+        // 4. GUARDAR RESERVA
+        // ============================
+        jdbcTemplate.update(
+                "INSERT INTO reservas_entrenamiento (usuario_id, horario_id, fecha_hora_sesion, estado) VALUES (?, ?, ?, 'CONFIRMADA')",
+                usuario.getId(),
+                horarioId,
+                fechaSesion
+        );
+    
+        // ============================
+        // 5. MARCAR HORARIO COMO OCUPADO
+        // ============================
+        jdbcTemplate.update(
+                "UPDATE horarios_entrenador SET disponible = false WHERE id = ?",
+                horarioId
+        );
+    
+        // ============================
+        // 6. INSERTAR EN EL CALENDARIO
+        // ============================
+        String fechaCalendario = fechaSesion.toLocalDate().toString();
+        String hora = horarioDb.get("hora").toString();
+        String nombreEntrenador = horarioDb.get("entrenador").toString();
+    
+        jdbcTemplate.update(
+                "INSERT INTO eventos_calendario (usuario_id, titulo, fecha, tipo, hora, nombre_entrenador) VALUES (?, ?, ?, ?, ?, ?)",
+                usuario.getId(),
+                tituloEvento,
+                fechaCalendario,
+                "entrenamiento",
+                hora,
+                nombreEntrenador
+        );
+    
+        return ResponseEntity.ok(
+                Collections.singletonMap(
+                        "mensaje",
+                        "✅ Reserva confirmada. Revisa tu calendario."
+                )
+        );
     }
 }

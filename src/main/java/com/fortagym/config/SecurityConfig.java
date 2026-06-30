@@ -79,6 +79,8 @@ public class SecurityConfig {
                 // 🛒 RUTAS PÚBLICAS
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/admin/promociones/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/entrenadores/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/nutricionistas/**").permitAll()
 
                 .requestMatchers(
                     "/api/auth/**",
@@ -99,6 +101,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers("/api/carrito/**").authenticated()
                 .requestMatchers("/api/calendario/**").authenticated()
+                .requestMatchers("/api/tienda/pedidos/").authenticated()
 
                 // 🛡️ RESTO DE RUTAS
                 .anyRequest().authenticated()

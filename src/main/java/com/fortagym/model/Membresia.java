@@ -45,9 +45,12 @@ public class Membresia {
     @OneToMany(mappedBy = "membresia", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BeneficioMembresia> features;
 
+    @Column(name = "limite_reservas_mensuales")
+    private Integer limiteReservasMensuales;    
+
     public Membresia() {}
 
-    public Membresia(String tipo, int duracionMeses, String descripcion, double precio, String imagenUrl, String fidelidad, boolean recomendado, String colorBoton, List<BeneficioMembresia> features) {
+    public Membresia(String tipo, int duracionMeses, String descripcion, double precio, String imagenUrl, String fidelidad, boolean recomendado, String colorBoton, List<BeneficioMembresia> features, Integer limiteReservasMensuales) {
         this.tipo = tipo;
         this.duracionMeses = duracionMeses;
         this.descripcion = descripcion;
@@ -57,6 +60,7 @@ public class Membresia {
         this.recomendado = recomendado;
         this.colorBoton = colorBoton;
         this.features = features;
+        this.limiteReservasMensuales = limiteReservasMensuales;
     }
 
     // Getters y Setters
@@ -118,4 +122,7 @@ public class Membresia {
 
     public List<BeneficioMembresia> getFeatures() { return features; }
     public void setFeatures(List<BeneficioMembresia> features) { this.features = features; }
+
+    public Integer getLimiteReservasMensuales() { return limiteReservasMensuales; }
+    public void setLimiteReservasMensuales(Integer limiteReservasMensuales) { this.limiteReservasMensuales = limiteReservasMensuales; }
 }
