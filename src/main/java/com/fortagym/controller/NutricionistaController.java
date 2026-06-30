@@ -3,6 +3,7 @@ package com.fortagym.controller;
 import com.fortagym.model.Usuario;
 import com.fortagym.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,9 @@ public class NutricionistaController {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Value("${app.backend.url}")
+    private String backendUrl;
+
     @GetMapping
     public ResponseEntity<?> listarNutricionistas() {
         String sql = "SELECT u.id, u.nombre, u.apellido, np.especialidad, np.descripcion " +
@@ -37,7 +41,7 @@ public class NutricionistaController {
             nutri.put("nombre", n.get("nombre") + " " + n.get("apellido"));
             nutri.put("especialidad", n.get("especialidad"));
             nutri.put("descripcion", n.get("descripcion"));
-            nutri.put("fotoUrl", "http://localhost:8089/api/usuarios/foto/" + n.get("id"));
+            nutri.put("fotoUrl", backendUrl + "/api/usuarios/foto/" + n.get("id"));
 
             String sqlHorarios = "SELECT * FROM horarios_nutricionista WHERE nutricionista_id = ?";
             List<Map<String, Object>> bdHorarios = jdbcTemplate.queryForList(sqlHorarios, n.get("id"));

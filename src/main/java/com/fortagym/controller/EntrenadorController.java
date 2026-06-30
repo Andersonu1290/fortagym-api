@@ -3,6 +3,7 @@ package com.fortagym.controller;
 import com.fortagym.model.Usuario;
 import com.fortagym.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,9 @@ public class EntrenadorController {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Value("${app.backend.url}")
+    private String backendUrl;
+
     // 1. Obtener todos los entrenadores con sus horarios para Angular
     @GetMapping
     public ResponseEntity<?> listarEntrenadoresDisponibles() {
@@ -38,7 +42,7 @@ public class EntrenadorController {
             entrenador.put("nombre", e.get("nombre") + " " + e.get("apellido"));
             entrenador.put("especialidad", e.get("especialidad"));
             entrenador.put("descripcion", e.get("descripcion"));
-            entrenador.put("fotoUrl", "http://localhost:8089/api/usuarios/foto/" + e.get("id")); // Ruta dinámica de la foto
+            entrenador.put("fotoUrl", backendUrl + "/api/usuarios/foto/" + e.get("id"));
 
             // Buscar los horarios de este entrenador
             String sqlHorarios = "SELECT * FROM horarios_entrenador WHERE entrenador_id = ?";
