@@ -34,11 +34,9 @@ public class EntrenadorController {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-
     // 1. Obtener todos los entrenadores con sus horarios para Angular
     @GetMapping
     public ResponseEntity<?> listarEntrenadoresDisponibles() {
-        // Consulta que une usuarios (entrenadores) con su perfil
         String sqlEntrenadores = "SELECT u.id, u.nombre, u.apellido, ep.especialidad, ep.descripcion " +
                                  "FROM usuarios u JOIN entrenador_perfil ep ON u.id = ep.usuario_id " +
                                  "WHERE u.rol = 'ENTRENADOR'";
@@ -69,7 +67,6 @@ public class EntrenadorController {
                 Map<String, Object> sesion = new HashMap<>();
                 sesion.put("duracionMinutos", h.get("duracion_minutos"));
                 sesion.put("descripcion", h.get("descripcion"));
-                // Convertimos el string separado por comas en un Array para Angular
                 sesion.put("ejercicios", Arrays.asList(h.get("ejercicios").toString().split(",")));
                 
                 horario.put("sesion", sesion);
@@ -165,13 +162,24 @@ public class EntrenadorController {
     
         String tituloEvento = "Entrenamiento: " + horarioDb.get("descripcion");
     
-        // Ejemplo: reserva para dentro de 2 días
-        java.time.LocalDateTime fechaSesion = java.time.LocalDateTime.now()
-                .plusDays(2)
-                .withHour(8)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0);
+        // ====================================================================
+        // 🛠️ NUEVA LÓGICA: CÁLCULO DINÁMICO DE FECHA Y HORA (CORREGIDO)
+        // ====================================================================
+        String nombreDia = (String) horarioDb.get("dia");   // Ej: "Martes"
+        String horaStr = (String) horarioDb.get("hora");     // Ej: "08:00 AM"
+    
+        // 1. Traducir el día y calcular la fecha exacta (Siguiente o mismo día)
+        java.time.DayOfWeek diaObjetivo = traducirDia(nombreDia);
+        java.time.LocalDate fechaCalculada = java.time.LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.nextOrSame(diaObjetivo));
+    
+        // 2. Parsear la hora del formato String ("08:00 AM") a LocalTime
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("hh:mm a", java.util.Locale.ENGLISH);
+        java.time.LocalTime horaCalculada = java.time.LocalTime.parse(horaStr, formatter);
+    
+        // 3. Fusionar fecha y hora correctas
+        java.time.LocalDateTime fechaSesion = java.time.LocalDateTime.of(fechaCalculada, horaCalculada);
+        // ====================================================================
     
         // ============================
         // 4. GUARDAR RESERVA
@@ -214,8 +222,9 @@ public class EntrenadorController {
                         "✅ Reserva confirmada. Revisa tu calendario."
                 )
         );
-   }
-   // ==========================================
+    }
+
+    // ==========================================
     // PANEL DEL ENTRENADOR: GESTIÓN DE HORARIOS
     // ==========================================
 
@@ -276,5 +285,25 @@ public class EntrenadorController {
         String sql = "DELETE FROM horarios_entrenador WHERE id = ? AND entrenador_id = ?";
         jdbcTemplate.update(sql, id, usuario.getId());
         return ResponseEntity.ok(Collections.singletonMap("mensaje", "Horario eliminado"));
+    }
+
+    // ==========================================
+    // 🛠️ MÉTODO AUXILIAR: TRADUCTOR DE DÍAS
+    // ==========================================
+    private java.time.DayOfWeek traducirDia(String diaEspanol) {
+        if (diaEspanol == null) return java.time.DayOfWeek.MONDAY;
+        
+        switch (diaEspanol.trim().toLowerCase()) {
+            case "lunes": return java.time.DayOfWeek.MONDAY;
+            case "martes": return java.time.DayOfWeek.TUESDAY;
+            case "miercoles":
+            case "miércoles": return java.time.DayOfWeek.WEDNESDAY;
+            case "jueves": return java.time.DayOfWeek.THURSDAY;
+            case "viernes": return java.time.DayOfWeek.FRIDAY;
+            case "sabado":
+            case "sábado": return java.time.DayOfWeek.SATURDAY;
+            case "domingo": return java.time.DayOfWeek.SUNDAY;
+            default: return java.time.DayOfWeek.MONDAY;
+        }
     }
 }

@@ -1,17 +1,29 @@
 package com.fortagym.controller;
 
-import com.fortagym.model.Usuario;
-import com.fortagym.repository.UsuarioRepository;
+import java.security.Principal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.security.Principal;
-import java.time.LocalDateTime;
-import java.util.*;
+import com.fortagym.model.Usuario;
+import com.fortagym.repository.UsuarioRepository;
 
 @RestController
 @RequestMapping("/api/nutricionistas")
@@ -88,8 +100,24 @@ public class NutricionistaController {
         double altura = Double.parseDouble(datosBasicos.get("alturaCm").toString());
         String objetivo = datosBasicos.get("objetivo").toString();
         
-        // Simulamos la reserva para el día siguiente
-        LocalDateTime fechaSesion = LocalDateTime.now().plusDays(1).withHour(9).withMinute(0);
+        // ====================================================================
+        // 🛠️ NUEVA LÓGICA: CÁLCULO DINÁMICO DE FECHA Y HORA PARA NUTRICIÓN
+        // ====================================================================
+        String nombreDia = (String) horarioDb.get("dia");   // Ej: "Lunes"
+        String horaStr = (String) horarioDb.get("hora");    // Ej: "09:00 AM"
+
+        // 1. Traducir el día y calcular la fecha exacta (Siguiente o mismo día)
+        java.time.DayOfWeek diaObjetivo = traducirDia(nombreDia);
+        java.time.LocalDate fechaCalculada = java.time.LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.nextOrSame(diaObjetivo));
+
+        // 2. Parsear la hora del formato String a LocalTime
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("hh:mm a", java.util.Locale.ENGLISH);
+        java.time.LocalTime horaCalculada = java.time.LocalTime.parse(horaStr, formatter);
+
+        // 3. Fusionar fecha y hora correctas
+        LocalDateTime fechaSesion = LocalDateTime.of(fechaCalculada, horaCalculada);
+        // ====================================================================
 
         // 1. Guardar Reserva Nutricional
         jdbcTemplate.update("INSERT INTO reservas_nutricion (usuario_id, horario_id, peso_kg, altura_cm, objetivo, fecha_hora_sesion) VALUES (?, ?, ?, ?, ?, ?)",
@@ -169,5 +197,25 @@ public class NutricionistaController {
         String sql = "DELETE FROM horarios_nutricionista WHERE id = ? AND nutricionista_id = ?";
         jdbcTemplate.update(sql, id, usuario.getId());
         return ResponseEntity.ok(Collections.singletonMap("mensaje", "Horario eliminado"));
+    }
+
+    // ==========================================
+    // 🛠️ MÉTODO AUXILIAR: TRADUCTOR DE DÍAS
+    // ==========================================
+    private java.time.DayOfWeek traducirDia(String diaEspanol) {
+        if (diaEspanol == null) return java.time.DayOfWeek.MONDAY;
+        
+        switch (diaEspanol.trim().toLowerCase()) {
+            case "lunes": return java.time.DayOfWeek.MONDAY;
+            case "martes": return java.time.DayOfWeek.TUESDAY;
+            case "miercoles":
+            case "miércoles": return java.time.DayOfWeek.WEDNESDAY;
+            case "jueves": return java.time.DayOfWeek.THURSDAY;
+            case "viernes": return java.time.DayOfWeek.FRIDAY;
+            case "sabado":
+            case "sábado": return java.time.DayOfWeek.SATURDAY;
+            case "domingo": return java.time.DayOfWeek.SUNDAY;
+            default: return java.time.DayOfWeek.MONDAY;
+        }
     }
 }
