@@ -77,7 +77,7 @@ public class SecurityConfig {
                 ).permitAll()
 
                 // 🛒 RUTAS PÚBLICAS
-                .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/productos").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/admin/promociones/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/entrenadores/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/nutricionistas/**").permitAll()
@@ -102,6 +102,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/carrito/**").authenticated()
                 .requestMatchers("/api/calendario/**").authenticated()
                 .requestMatchers("/api/tienda/pedidos/").authenticated()
+
+                .requestMatchers(HttpMethod.GET, "/api/productos/eliminados").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/productos/guardar").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/productos/restaurar/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/eliminar/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/eliminar-definitivo/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/productos/restaurar/**").hasAuthority("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/eliminar-definitivo/**").hasAuthority("ADMIN")
 
                 // 🛡️ RESTO DE RUTAS
                 .anyRequest().authenticated()

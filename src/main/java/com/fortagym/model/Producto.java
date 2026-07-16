@@ -36,16 +36,40 @@ public class Producto {
     @Column(length = 500)
     private String img;
 
+    @Column(nullable = false)
+    private Boolean activo = true;
+
     // Constructores
     public Producto() {}
 
-    public Producto(String nombre, CategoriaProducto categoria, Double precio, Integer stock, String descripcion, String img) {
+    public Producto(String nombre,
+                    CategoriaProducto categoria,
+                    Double precio,
+                    Integer stock,
+                    String descripcion,
+                    String img) {
+                    
         this.nombre = nombre;
         this.categoria = categoria;
         this.precio = precio;
         this.stock = stock;
         this.descripcion = descripcion;
         this.img = img;
+        this.activo = true;
+    }
+
+    public Producto(String nombre, CategoriaProducto categoria,
+                Double precio, Integer stock,
+                String descripcion, String img,
+                Boolean activo) {
+
+        this.nombre = nombre;
+        this.categoria = categoria;
+        this.precio = precio;
+        this.stock = stock;
+        this.descripcion = descripcion;
+        this.img = img;
+        this.activo = activo;
     }
 
     // Getters y Setters
@@ -70,4 +94,12 @@ public class Producto {
     // 🔥 CAMBIADO: Métodos actualizados
     public String getImg() { return img; }
     public void setImg(String img) { this.img = img; }
+
+    public Boolean getActivo() {
+    return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
 }

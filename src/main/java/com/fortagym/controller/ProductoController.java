@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,6 +37,11 @@ public class ProductoController {
     @GetMapping
     public ResponseEntity<List<Producto>> listarProductos() {
         return ResponseEntity.ok(productoService.obtenerTodos());
+    }
+
+    @GetMapping("/eliminados")
+    public ResponseEntity<List<Producto>> listarProductosEliminados() {
+        return ResponseEntity.ok(productoService.obtenerEliminados());
     }
 
     @PostMapping("/guardar")
@@ -91,14 +97,28 @@ public class ProductoController {
     public ResponseEntity<?> eliminarProducto(@PathVariable Long id) {
         try {
             Producto p = productoService.obtenerPorId(id);
-            if (p != null && p.getImg() != null && p.getImg().startsWith("/uploads/")) {
-                File archivo = new File(uploadDir + p.getImg().replace("/uploads/", ""));
-                if (archivo.exists()) archivo.delete();
-            }
             productoService.eliminarProducto(id);
             return ResponseEntity.ok(Collections.singletonMap("mensaje", "Producto eliminado"));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Collections.singletonMap("error", e.getMessage()));
         }
+    }
+
+    @PutMapping("/restaurar/{id}")
+    @Transactional
+    public ResponseEntity<?> restaurarProducto(@PathVariable Long id) {
+        productoService.restaurarProducto(id);
+        return ResponseEntity.ok(
+            Collections.singletonMap("mensaje", "Producto restaurado correctamente")
+        );
+    }
+    
+    @DeleteMapping("/eliminar-definitivo/{id}")
+    @Transactional
+    public ResponseEntity<?> eliminarDefinitivo(@PathVariable Long id) {
+        productoService.eliminarProductoDefinitivo(id);
+        return ResponseEntity.ok(
+            Collections.singletonMap("mensaje", "Producto eliminado definitivamente")
+        );
     }
 }

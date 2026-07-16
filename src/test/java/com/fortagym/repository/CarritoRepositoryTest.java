@@ -32,6 +32,7 @@ class CarritoRepositoryTest {
         usuarioRepository.save(u);
 
         Producto p = new Producto("Item", com.fortagym.model.CategoriaProducto.ROPA, 10.0, 1, "d", "i");
+        p.setActivo(true);
         productoRepository.save(p);
 
         Carrito c = new Carrito();

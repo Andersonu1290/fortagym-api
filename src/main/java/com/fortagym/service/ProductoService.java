@@ -14,7 +14,11 @@ public class ProductoService {
     private ProductoRepository productoRepository;
 
     public List<Producto> obtenerTodos() {
-        return productoRepository.findAll();
+        return productoRepository.findByActivoTrue();
+    }
+
+    public List<Producto> obtenerEliminados() {
+        return productoRepository.findByActivoFalse();
     }
 
     public Producto obtenerPorId(Long id) {
@@ -26,6 +30,25 @@ public class ProductoService {
     }
 
     public void eliminarProducto(Long id) {
+
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Producto no encontrado"));
+
+        producto.setActivo(false);
+
+        productoRepository.save(producto);
+    }
+
+    public void restaurarProducto(Long id) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        
+        producto.setActivo(true);
+        productoRepository.save(producto);
+    }
+    
+    public void eliminarProductoDefinitivo(Long id) {
         productoRepository.deleteById(id);
     }
 }
