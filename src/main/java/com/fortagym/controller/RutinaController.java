@@ -157,4 +157,36 @@ public class RutinaController {
             return ResponseEntity.internalServerError().body("Error en el servidor: " + e.getMessage());
         }
     }
+
+    // OBTENER MI PROPIA RUTINA (Para el Cliente)
+    @GetMapping("/mi-rutina")
+    public ResponseEntity<?> obtenerMiRutina(java.security.Principal principal) {
+    
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+    
+        Usuario usuario;
+        try {
+            usuario = usuarioService.buscarPorEmail(principal.getName());
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    
+        Optional<Rutina> rutinaOpt = rutinaService.buscarPorUsuario(usuario);
+    
+        if (rutinaOpt.isEmpty()) {
+            return ResponseEntity.ok(
+                    Collections.singletonMap(
+                            "mensaje",
+                            "Aún no tienes rutina asignada."
+                    )
+            );
+        }
+    
+        Rutina rutina = rutinaOpt.get();
+        rutina.setDetalles(detalleRutinaRepository.findByRutina(rutina));
+    
+        return ResponseEntity.ok(rutina);
+    }
 }

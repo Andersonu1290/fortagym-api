@@ -120,4 +120,33 @@ public class NutricionController {
             return ResponseEntity.ok(java.util.Collections.singletonMap("mensaje", "El usuario no tenía cartilla"));
         }
     }
+
+    // OBTENER MI PROPIA CARTILLA NUTRICIONAL (Para el Cliente)
+    @GetMapping("/mi-cartilla")
+    public ResponseEntity<?> obtenerMiCartilla(java.security.Principal principal) {
+    
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+    
+        Usuario usuario;
+        try {
+            usuario = usuarioService.buscarPorEmail(principal.getName());
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    
+        Optional<Nutricion> nutricionOpt = nutricionRepository.findByUsuario(usuario);
+    
+        if (nutricionOpt.isEmpty()) {
+            return ResponseEntity.ok(
+                    java.util.Collections.singletonMap(
+                            "mensaje",
+                            "Aún no tienes un plan nutricional asignado."
+                    )
+            );
+        }
+    
+        return ResponseEntity.ok(nutricionOpt.get());
+    }
 }
