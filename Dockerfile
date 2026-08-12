@@ -9,8 +9,8 @@ FROM eclipse-temurin:17-jdk-jammy
 # IMPORTANTE: Verifica que el nombre del .jar sea fortagym-0.0.1-SNAPSHOT.jar
 COPY --from=build /target/fortagym-0.0.1-SNAPSHOT.jar app.jar
 
-# Exponemos el puerto para la nube (8080)
+# Exponemos el puerto por defecto (opcional, Render lo ignora y usa el suyo)
 EXPOSE 8080
 
-# 🔥 LA MAGIA AQUÍ: Le decimos a Java que active el perfil "prod" para leer los enlaces web
-ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+# 🔥 LA MAGIA AQUÍ: Limitamos la RAM a 256MB máximo y activamos el perfil prod
+ENTRYPOINT ["java", "-Xms128m", "-Xmx256m", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
