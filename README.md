@@ -83,7 +83,8 @@ El proyecto incluye un Dockerfile optimizado en dos etapas (Multistage Build) pa
 docker build -t fortagym-api .
 # Ejecutar contenedor
 docker run -p 8080:8080 -e PORT=8080 fortagym-api
-
+```
+### 2. Clonar el repositorio
 🔗 Aplicación Frontend (Complemento)
 Este repositorio contiene exclusivamente la API (Backend). La interfaz de usuario ha sido desarrollada como una SPA moderna utilizando Angular.
 Puedes encontrar el código fuente del frontend, el diseño de la tienda y los paneles interactivos en el siguiente repositorio:
